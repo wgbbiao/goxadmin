@@ -13,7 +13,7 @@ import (
 	"github.com/wxnacy/wgo/arrays"
 	validator "gopkg.in/go-playground/validator.v9"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 )
 
 //JwtKey JwtKey

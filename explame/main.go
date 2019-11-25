@@ -6,7 +6,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql" //mysql
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 	xadmin "github.com/wgbbiao/goxadmin"
 	"github.com/wgbbiao/goxadmin/auth"
 )
@@ -26,7 +26,6 @@ func main() {
 	DB.DB().SetMaxIdleConns(50)
 	DB.DB().SetMaxOpenConns(50)
 	DB.DB().SetConnMaxLifetime(time.Duration(1000) * time.Second)
-	fmt.Println("ddddd")
 	xadmin.Db = DB
 	auth.AutoMigrate()     //生成表结构
 	auth.SyncPermissions() //同步权限

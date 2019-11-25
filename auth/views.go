@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 )
 
 //Login 用户登录
