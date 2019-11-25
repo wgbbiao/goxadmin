@@ -1,4 +1,4 @@
-package xadmin
+package goxadmin
 
 import (
 	"crypto/md5"

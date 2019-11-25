@@ -1,4 +1,4 @@
-package xadmin
+package goxadmin
 
 //常量
 const (
