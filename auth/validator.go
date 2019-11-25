@@ -1,7 +1,7 @@
 package auth
 
 import (
-	xadmin "github.com/wgbbiao/goxadmin"
+	"github.com/wgbbiao/goxadmin"
 
 	validator "gopkg.in/go-playground/validator.v9"
 )
@@ -17,7 +17,7 @@ func initValidator() {
 func CreateUserStructLevelValidation(sl validator.StructLevel) {
 	j := sl.Current().Interface().(User)
 	if j.Password != j.Password2 {
-		sl.ReportError(j.Password, "Password", "Password", xadmin.UserPasswordError, "")
+		sl.ReportError(j.Password, "Password", "Password", goxadmin.UserPasswordError, "")
 		return
 	}
 	j.Password = "22222"

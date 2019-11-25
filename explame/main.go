@@ -7,7 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql" //mysql
 	"github.com/kataras/iris/v12"
-	xadmin "github.com/wgbbiao/goxadmin"
+	"github.com/wgbbiao/goxadmin"
 	"github.com/wgbbiao/goxadmin/auth"
 )
 
@@ -26,11 +26,11 @@ func main() {
 	DB.DB().SetMaxIdleConns(50)
 	DB.DB().SetMaxOpenConns(50)
 	DB.DB().SetConnMaxLifetime(time.Duration(1000) * time.Second)
-	xadmin.Db = DB
+	goxadmin.Db = DB
 	auth.AutoMigrate()     //生成表结构
 	auth.SyncPermissions() //同步权限
 	r := iris.New()
-	xadmin.Init(r)
+	goxadmin.Init(r)
 
 	for _, _r := range r.GetRoutes() {
 		fmt.Println(_r)

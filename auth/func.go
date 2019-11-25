@@ -2,7 +2,7 @@ package auth
 
 import (
 	"reflect"
-	xadmin "github.com/wgbbiao/goxadmin"
+	 "github.com/wgbbiao/goxadmin"
 	"strings"
 )
 
@@ -23,7 +23,7 @@ func SyncPermissions() {
 		PolicyDelete,
 		PolicyWrite,
 	}
-	for _, model := range xadmin.GetRegModels() {
+	for _, model := range goxadmin.GetRegModels() {
 		v := reflect.ValueOf(model)
 		method := v.MethodByName("Permissions")
 		newActs := acts

@@ -1,11 +1,11 @@
 package auth
 
 import (
-	xadmin "github.com/wgbbiao/goxadmin"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/kataras/iris/v12"
+	"github.com/wgbbiao/goxadmin"
 )
 
 //Login 用户登录
@@ -19,15 +19,15 @@ func Login(c iris.Context) {
 	if err := c.ReadJSON(&form); err != nil {
 		c.StatusCode(iris.StatusBadRequest)
 		c.JSON(iris.Map{
-			"status": xadmin.HTTPFail,
-			"code":   xadmin.FormReadError,
+			"status": goxadmin.HTTPFail,
+			"code":   goxadmin.FormReadError,
 		})
 	} else {
 		if db := u.GetByUsername(form.Username); db.RecordNotFound() {
 			c.StatusCode(iris.StatusBadRequest)
 			c.JSON(iris.Map{
-				"status": xadmin.HTTPFail,
-				"code":   xadmin.UserDoesNotExist,
+				"status": goxadmin.HTTPFail,
+				"code":   goxadmin.UserDoesNotExist,
 			})
 		} else {
 			if u.CheckPassword(form.Password) {
@@ -37,20 +37,20 @@ func Login(c iris.Context) {
 				}
 
 				accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
-				tokenString, _ := accessToken.SignedString([]byte(xadmin.JwtKey))
+				tokenString, _ := accessToken.SignedString([]byte(goxadmin.JwtKey))
 				u.UpdateInfo(map[string]interface{}{
 					"last_login_at": time.Now(),
 				})
 				c.JSON(iris.Map{
-					"status":   xadmin.HTTPSuccess,
+					"status":   goxadmin.HTTPSuccess,
 					"token":    tokenString,
 					"username": u.Username,
 				})
 			} else {
 				c.StatusCode(iris.StatusBadRequest)
 				c.JSON(iris.Map{
-					"status": xadmin.HTTPFail,
-					"code":   xadmin.UserPasswordError,
+					"status": goxadmin.HTTPFail,
+					"code":   goxadmin.UserPasswordError,
 				})
 			}
 		}
