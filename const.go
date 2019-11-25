@@ -9,7 +9,10 @@ const (
 
 //错误常量
 const (
-	DBError       string = "db_error"
-	ValidateError string = "validate_error"
-	FormReadError string = "form_read_error"
+	DBError           string = "db_error"
+	ValidateError     string = "validate_error"
+	FormReadError     string = "form_read_error"
+	TokenIsExpired    string = "TokenIsExpired"
+	UserDoesNotExist  string = "UserDoesNotExist"
+	UserPasswordError string = "UserPasswordError"
 )

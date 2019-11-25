@@ -3,8 +3,9 @@ package auth
 import (
 	"fmt"
 	"reflect"
-	xadmin "github.com/wgbbiao/goxadmin"
 	"time"
+
+	xadmin "github.com/wgbbiao/goxadmin"
 
 	"github.com/dgrijalva/jwt-go"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
@@ -237,7 +238,7 @@ var jwtc = jwtmiddleware.Config{
 		return []byte(xadmin.JwtKey), nil
 	},
 	SigningMethod: jwt.SigningMethodHS256,
-	ErrorHandler:  OnJwtError,
+	// ErrorHandler:  OnJwtError,
 }
 
 var myJwtMiddleware = jwtmiddleware.New(jwtc)
@@ -253,11 +254,11 @@ func OnJwtError(ctx context.Context, err error) {
 }
 
 //CheckJWTAndSetUser 检查jwt并把User放到Values
-func CheckJWTAndSetUser(ctx iris.Context) {
-	if err := myJwtMiddleware.CheckJWT(ctx); err != nil {
-		myJwtMiddleware.Config.ErrorHandler(ctx, err)
-		return
-	}
+func CheckJWTAndSetUser(ctx context.Context) {
+	// if err := myJwtMiddleware.CheckJWT(ctx); err != nil {
+	// 	myJwtMiddleware.Config.ErrorHandler(ctx, err)
+	// 	return
+	// }
 	// If everything ok then call next.
 	if ctx.GetStatusCode() != iris.StatusUnauthorized {
 		var u User
