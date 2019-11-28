@@ -1,11 +1,16 @@
 package goxadmin
 
 import (
+	"fmt"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 	"github.com/kataras/iris/v12"
+	"github.com/unknwon/com"
+	"github.com/wxnacy/wgo/arrays"
 )
 
 //Login 用户登录
@@ -118,6 +123,207 @@ func CheckJWTAndSetUser(ctx iris.Context) {
 			ctx.JSON(iris.Map{
 				"status": HTTPFail,
 				"code":   UserDoesNotExist,
+			})
+		}
+	}
+}
+
+// ListHandel ListHandel
+func ListHandel(ctx iris.Context) {
+	config := GetConfig(ctx.Params().Get("model"), ctx.Params().Get("table"))
+	if arrays.ContainsString(config.DisableAction, "list") > -1 {
+		ctx.StatusCode(iris.StatusForbidden)
+	} else {
+		rs := NewSlice(config.Model)
+		page := com.StrTo(ctx.URLParam("page")).MustInt()
+		all, _ := ctx.URLParamBool("__all__")
+		if page == 0 {
+			page = 1
+		}
+		limit := config.PageSize
+		if all {
+			limit = 999999
+		} else {
+			if limit == 0 {
+				limit = 20
+			}
+		}
+		offset := (page - 1) * limit
+		params := ctx.URLParams()
+		cnt := 0
+
+		err := Db.Set("gorm:auto_preload", true).Scopes(MapToWhere(params, config)).
+			Limit(limit).
+			Offset(offset).
+			Find(rs).
+			Offset(0).
+			Count(&cnt).Error
+		if err == nil {
+			ctx.JSON(iris.Map{
+				"list":  rs,
+				"total": cnt,
+			})
+		} else {
+			ctx.StatusCode(iris.StatusBadRequest)
+			ctx.JSON(iris.Map{
+				"status":  HTTPFail,
+				"error":   "save error",
+				"errinfo": err,
+			})
+		}
+	}
+}
+
+//DetailHandel 详情页
+func DetailHandel(ctx iris.Context) {
+	id, _ := ctx.Params().GetInt("id")
+	config := GetConfig(ctx.Params().Get("model"), ctx.Params().Get("table"))
+	if arrays.ContainsString(config.DisableAction, "detail") > -1 {
+		ctx.StatusCode(iris.StatusForbidden)
+	} else {
+		obj := GetVal(config.Model)
+		if err := Db.Set("gorm:auto_preload", true).First(obj, id).Error; err == nil {
+			ctx.JSON(iris.Map{
+				"data": obj,
+			})
+		} else {
+			ctx.StatusCode(iris.StatusBadRequest)
+			ctx.JSON(iris.Map{
+				"status":  HTTPFail,
+				"error":   "save error",
+				"errinfo": err,
+			})
+		}
+	}
+}
+
+//PostHandel 添加记录
+func PostHandel(ctx iris.Context) {
+	config := GetConfig(ctx.Params().Get("model"), ctx.Params().Get("table"))
+	if arrays.ContainsString(config.DisableAction, "create") > -1 {
+		ctx.StatusCode(iris.StatusForbidden)
+	} else {
+		obj := GetVal(config.Model)
+		if err := ctx.ReadJSON(&obj); err == nil {
+			if err = Validate.Struct(obj); err == nil {
+				if config.BeforeSave != nil {
+					config.BeforeSave(obj)
+				}
+				if err = Db.Create(obj).Error; err == nil {
+					ctx.JSON(iris.Map{
+						"status": HTTPSuccess,
+						"data":   obj,
+					})
+				} else {
+					ctx.StatusCode(iris.StatusBadRequest)
+					ctx.JSON(iris.Map{
+						"status":  HTTPFail,
+						"error":   DBError,
+						"errinfo": err,
+					})
+				}
+			} else {
+				ctx.StatusCode(iris.StatusBadRequest)
+				ctx.JSON(iris.Map{
+					"status":  HTTPFail,
+					"error":   ValidateError,
+					"errinfo": err,
+				})
+			}
+		} else {
+			ctx.StatusCode(iris.StatusBadRequest)
+			ctx.JSON(iris.Map{
+				"status": HTTPFail,
+				"error":  FormReadError,
+			})
+		}
+	}
+}
+
+//UpdateHandel 修改记录
+func UpdateHandel(ctx iris.Context) {
+	config := GetConfig(ctx.Params().Get("model"), ctx.Params().Get("table"))
+	if arrays.ContainsString(config.DisableAction, "update") > -1 {
+		ctx.StatusCode(iris.StatusForbidden)
+	} else {
+		obj := GetVal(config.Model)
+		id, _ := ctx.Params().GetInt("id")
+		Db.First(obj, id)
+		t := reflect.TypeOf(obj).Elem()
+		// 删除多对多的关系，然后重新添加
+		for k := 0; k < t.NumField(); k++ {
+			field := t.Field(k)
+			if strings.Contains(field.Tag.Get("gorm"), "many2many") {
+				Db.Model(obj).Association(t.Field(k).Name).Clear()
+			}
+		}
+
+		if err := ctx.ReadJSON(&obj); err == nil {
+			// config.BeforeSave(obj)
+			if Db.Save(obj).Error == nil {
+				sc := Db.NewScope(obj)
+				for _, f := range sc.Fields() {
+					if f.Relationship != nil {
+						if f.Relationship.Kind == "has_many" {
+							ff := f.Field
+							px := make([]int64, 0)
+							for index := 0; index < ff.Len(); index++ {
+								elm := ff.Index(index)
+								px = append(px, elm.FieldByName("ID").Int())
+							}
+							if ff.Len() > 0 {
+								tableName := Db.NewScope(ff.Index(0).Interface()).TableName()
+								sql := fmt.Sprintf("DELETE from %s Where id NOT IN (?) and %s = ?", tableName, f.Relationship.ForeignDBNames[0])
+								Db.Exec(sql, px, id)
+							}
+						}
+					}
+				}
+				ctx.JSON(iris.Map{
+					"status": HTTPSuccess,
+				})
+			} else {
+				ctx.StatusCode(iris.StatusBadRequest)
+				ctx.JSON(iris.Map{
+					"status":  HTTPFail,
+					"error":   DBError,
+					"errinfo": err,
+				})
+			}
+		} else {
+			ctx.StatusCode(iris.StatusBadRequest)
+			ctx.JSON(iris.Map{
+				"status": HTTPFail,
+				"error":  FormReadError,
+			})
+		}
+	}
+}
+
+//DeleteHandel 删除记录
+func DeleteHandel(ctx iris.Context) {
+	id, _ := ctx.Params().GetInt("id")
+	config := GetConfig(ctx.Params().Get("model"), ctx.Params().Get("table"))
+	if arrays.ContainsString(config.DisableAction, "delete") > -1 {
+		ctx.StatusCode(iris.StatusForbidden)
+	} else {
+		obj := GetVal(config.Model)
+		if err := Db.First(obj, id).Error; err == nil {
+			if Db.Delete(obj).Error == nil {
+				ctx.JSON(iris.Map{
+					"data": obj,
+				})
+			} else {
+				ctx.StatusCode(iris.StatusBadRequest)
+				ctx.JSON(iris.Map{
+					"status": HTTPFail,
+					"error":  DBError,
+				})
+			}
+		} else {
+			ctx.StatusCode(iris.StatusBadRequest)
+			ctx.JSON(iris.Map{
+				"errinfo": err,
 			})
 		}
 	}
