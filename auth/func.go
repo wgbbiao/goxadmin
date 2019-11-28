@@ -2,7 +2,7 @@ package auth
 
 import (
 	"reflect"
-	 "github.com/wgbbiao/goxadmin"
+	"github.com/wgbbiao/goxadmin"
 	"strings"
 )
 
