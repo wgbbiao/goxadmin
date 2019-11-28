@@ -8,7 +8,6 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql" //mysql
 	"github.com/kataras/iris/v12"
 	"github.com/wgbbiao/goxadmin"
-	"github.com/wgbbiao/goxadmin/auth"
 )
 
 func main() {
@@ -27,8 +26,8 @@ func main() {
 	DB.DB().SetMaxOpenConns(50)
 	DB.DB().SetConnMaxLifetime(time.Duration(1000) * time.Second)
 	goxadmin.Db = DB
-	auth.AutoMigrate()     //生成表结构
-	auth.SyncPermissions() //同步权限
+	goxadmin.AutoMigrate()     //生成表结构
+	goxadmin.SyncPermissions() //同步权限
 	r := iris.New()
 	goxadmin.Init(r)
 

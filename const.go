@@ -12,7 +12,16 @@ const (
 	DBError           string = "db_error"
 	ValidateError     string = "validate_error"
 	FormReadError     string = "form_read_error"
-	TokenIsExpired    string = "TokenIsExpired"
-	UserDoesNotExist  string = "UserDoesNotExist"
-	UserPasswordError string = "UserPasswordError"
+	TokenIsExpired    string = "token_is_expired"
+	UserDoesNotExist  string = "user_does_not_exist"
+	UserPasswordError string = "user_password_error"
+	UserNoPermission  string = "user_no_permission"
+)
+
+//权限
+const (
+	PolicyRead   string = "view"
+	PolicyWrite  string = "edit"
+	PolicyCreate string = "create"
+	PolicyDelete string = "delete"
 )

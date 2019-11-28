@@ -11,7 +11,6 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/unknwon/com"
 	"github.com/wxnacy/wgo/arrays"
-	validator "gopkg.in/go-playground/validator.v9"
 
 	"github.com/kataras/iris/v12"
 )
@@ -21,9 +20,6 @@ var JwtKey string = "Auys7;fq272/csH6"
 
 // JwtCheckFunc JwtCheckFunc
 var JwtCheckFunc func(c iris.Context)
-
-//Validate Validate
-var Validate *validator.Validate
 
 //Handle Handle
 type Handle struct {
@@ -406,6 +402,7 @@ func RegisterView(handle ...Handle) {
 
 //Init Init
 func Init(r iris.Party) {
+	JwtCheckFunc = CheckJWTAndSetUser
 	XadminIrisParty = r
 	for _, handel := range Handles {
 		for _, method := range handel.Method {

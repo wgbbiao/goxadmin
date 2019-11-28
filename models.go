@@ -1,21 +1,17 @@
-package auth
+package goxadmin
 
 import (
 	"fmt"
 	"reflect"
 	"time"
 
-	"github.com/wgbbiao/goxadmin"
-
-	"github.com/dgrijalva/jwt-go"
-	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 	"github.com/jinzhu/gorm"
 	"github.com/kataras/iris/v12"
 )
 
 //User 管理员
 type User struct {
-	goxadmin.Model
+	Model
 	Username    string        `gorm:"varchar(50);UNIQUE_INDEX" json:"username"`
 	Password    string        `gorm:"varchar(50)" json:"password,omitempty"`
 	Password2   string        `gorm:"-" json:"password2,omitempty"`
@@ -33,7 +29,7 @@ func (o User) TableName() string {
 
 //Role 用户角色
 type Role struct {
-	goxadmin.Model
+	Model
 	Name        string       `gorm:"varchar(50);" json:"name"`
 	Permissions []Permission `gorm:"many2many:xadmin_role_permission;association_autoupdate:false;association_autocreate:false" json:"permissions"`
 }
@@ -56,7 +52,7 @@ func (o UserRole) TableName() string {
 
 //Permission 权限表
 type Permission struct {
-	goxadmin.Model
+	Model
 	Name  string `gorm:"varchar(50);" json:"name"`
 	Table string `gorm:"varchar(50);UNIQUE_INDEX:model_code" json:"model"`
 	Code  string `gorm:"varchar(10);UNIQUE_INDEX:model_code" json:"code"` //编码
@@ -102,7 +98,7 @@ func HasPermissionForModel(u *User, model interface{}, perm string) (bl bool) {
 		return
 	}
 	ids := make([]uint, 0)
-	goxadmin.Db.Model(&PermissionUser{}).Where(PermissionUser{UserID: u.ID}).Pluck("permission_id", &ids)
+	Db.Model(&PermissionUser{}).Where(PermissionUser{UserID: u.ID}).Pluck("permission_id", &ids)
 	rids := make([]uint, 0)
 	for _, role := range u.Roles {
 		rids = append(rids, role.ID)
@@ -122,13 +118,13 @@ func HasPermissionForModel(u *User, model interface{}, perm string) (bl bool) {
 
 //getPermissionsFromRole 通过角色取得权限
 func getPermissionsFromRole(rids []uint) (ids []uint) {
-	goxadmin.Db.Model(&RolePermission{}).Where("role_id in (?)", rids).Pluck("permission_id", &ids)
+	Db.Model(&RolePermission{}).Where("role_id in (?)", rids).Pluck("permission_id", &ids)
 	return
 }
 
 //getPermissions 取得权限
 func getPermissionsForModel(model interface{}, perm string) (perms []Permission) {
-	goxadmin.Db.Where(&Permission{Table: GetModelName(model), Code: perm}).Find(&perms)
+	Db.Where(&Permission{Table: GetModelName(model), Code: perm}).Find(&perms)
 	return
 }
 
@@ -139,41 +135,41 @@ func (o User) Title() string {
 
 //AddRole 添加角色
 func AddRole(code, name string) error {
-	db := goxadmin.Db.Create(&Role{Name: name})
+	db := Db.Create(&Role{Name: name})
 	return db.Error
 }
 
 //AddPermission 添加权限
 func AddPermission(model, code, name string) error {
-	db := goxadmin.Db.FirstOrCreate(&Permission{Code: code, Name: name, Table: model}, &Permission{Code: code, Table: model})
+	db := Db.FirstOrCreate(&Permission{Code: code, Name: name, Table: model}, &Permission{Code: code, Table: model})
 	return db.Error
 }
 
 //GetByUsername 通过用户来查找用户
 //guangbiao
 func (o *User) GetByUsername(username string) *gorm.DB {
-	return goxadmin.Db.First(&o, map[string]interface{}{"username": username})
+	return Db.First(&o, map[string]interface{}{"username": username})
 }
 
 //CheckPassword 检查用户密码
 //guangbiao
 func (o *User) CheckPassword(password string) bool {
-	pass := goxadmin.Cmd5(password, o.Salt)
+	pass := Cmd5(password, o.Salt)
 	return o.Password == pass
 }
 
 //UpdateInfo 更新信息
 func (o *User) UpdateInfo(info interface{}) *gorm.DB {
-	return goxadmin.Db.Model(o).Omit("Roles", "Permissions").Updates(info)
+	return Db.Model(o).Omit("Roles", "Permissions").Updates(info)
 }
 
 //AddUser 添加管理员用户
 //guangbiao
 func AddUser(username, password string) (u User, err error) {
 	salt := fmt.Sprintf("%d", time.Now().Unix())
-	pass := goxadmin.Cmd5(password, salt)
+	pass := Cmd5(password, salt)
 	u = User{Username: username, Password: pass, Salt: salt}
-	db := goxadmin.Db.Create(&u)
+	db := Db.Create(&u)
 	err = db.Error
 	return
 }
@@ -182,21 +178,21 @@ func AddUser(username, password string) (u User, err error) {
 func (o *User) GetPermission() (perms []Permission) {
 	pids := make([]int, 0)
 	up := PermissionUser{UserID: o.ID}
-	goxadmin.Db.Model(&up).Where(up).Pluck("permission_id", &pids)
+	Db.Model(&up).Where(up).Pluck("permission_id", &pids)
 
 	roleid := make([]int, 0)
 	ur := UserRole{UserID: o.ID}
-	goxadmin.Db.Model(&ur).Where(ur).Pluck("role_id", &roleid)
+	Db.Model(&ur).Where(ur).Pluck("role_id", &roleid)
 
 	pids2 := make([]int, 0)
-	goxadmin.Db.Model(&RolePermission{}).Where("role_id in (?)", roleid).Pluck("permission_id", &pids2)
+	Db.Model(&RolePermission{}).Where("role_id in (?)", roleid).Pluck("permission_id", &pids2)
 	pids = append(pids, pids2...)
 
 	// pids3 := make([]int, 0)
-	// goxadmin.Db.Table("document_user").Where("user_id = ?", o.ID).Joins("left join permission on document_user.act = permission.code and permission.model=?", "document.Document").Select("permission.id").Pluck("id", &pids3)
+	// Db.Table("document_user").Where("user_id = ?", o.ID).Joins("left join permission on document_user.act = permission.code and permission.model=?", "document.Document").Select("permission.id").Pluck("id", &pids3)
 	// pids = append(pids, pids3...)
 
-	goxadmin.Db.Where("id in (?)", pids).Find(&perms)
+	Db.Where("id in (?)", pids).Find(&perms)
 	return perms
 }
 
@@ -223,61 +219,18 @@ func (o *User) GetUserByID(id int) *gorm.DB {
 	if id == 0 {
 		key = -1
 	}
-	return goxadmin.Db.Preload("Roles").Preload("Permissions").First(o, key)
+	return Db.Preload("Roles").Preload("Permissions").First(o, key)
 }
 
 //SetPassword SetPassword
 func (o *User) SetPassword() {
 	o.Salt = fmt.Sprintf("%d", time.Now().Unix())
-	o.Password = goxadmin.Cmd5(o.Password, o.Salt)
-}
-
-var jwtc = jwtmiddleware.Config{
-	ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
-		return []byte(goxadmin.JwtKey), nil
-	},
-	SigningMethod: jwt.SigningMethodHS256,
-	ErrorHandler:  OnJwtError,
-}
-
-var myJwtMiddleware = jwtmiddleware.New(jwtc)
-
-//OnJwtError jwt error
-func OnJwtError(ctx iris.Context, err error) {
-	ctx.StatusCode(iris.StatusUnauthorized)
-	ctx.JSON(iris.Map{
-		"status": "fail",
-		"info":   err,
-		"code":   goxadmin.TokenIsExpired,
-	})
-}
-
-//CheckJWTAndSetUser 检查jwt并把User放到Values
-func CheckJWTAndSetUser(ctx iris.Context) {
-	if err := myJwtMiddleware.CheckJWT(ctx); err != nil {
-		myJwtMiddleware.Config.ErrorHandler(ctx, err)
-		return
-	}
-	// If everything ok then call next.
-	if ctx.GetStatusCode() != iris.StatusUnauthorized {
-		var u User
-		x, _ := ctx.Values().Get("jwt").(*jwt.Token).Claims.(jwt.MapClaims)
-		if rt := u.GetUserByID(int(x["uid"].(float64))); !rt.RecordNotFound() && rt.Error == nil {
-			ctx.Values().Set("u", u)
-			ctx.Next()
-		} else {
-			ctx.StatusCode(iris.StatusBadRequest)
-			ctx.JSON(iris.Map{
-				"status": "fail",
-				"code":   goxadmin.UserDoesNotExist,
-			})
-		}
-	}
+	o.Password = Cmd5(o.Password, o.Salt)
 }
 
 //AutoMigrate AutoMigrate
 func AutoMigrate() {
-	goxadmin.Db.AutoMigrate(
+	Db.AutoMigrate(
 		&User{},
 		&Role{},
 		&UserRole{},
@@ -285,28 +238,26 @@ func AutoMigrate() {
 		&RolePermission{},
 		&PermissionUser{},
 	)
-	goxadmin.Db.Model(&PermissionUser{}).AddForeignKey("user_id", "xadmin_user(id)", "cascade", "cascade")
+	Db.Model(&PermissionUser{}).AddForeignKey("user_id", "xadmin_user(id)", "cascade", "cascade")
 }
 
 func init() {
 	initValidator()
-	goxadmin.JwtCheckFunc = CheckJWTAndSetUser
-	goxadmin.Validate = validate
-	goxadmin.RegisterView(
-		goxadmin.Handle{
+	RegisterView(
+		Handle{
 			Path:   "/login",
 			Method: []string{iris.MethodPost},
 			Func:   Login,
 			Jwt:    false,
 		},
-		goxadmin.Handle{
+		Handle{
 			Path:   "/info",
 			Method: []string{iris.MethodGet},
 			Func:   GetInfo,
 			Jwt:    true,
 		})
 
-	goxadmin.Register(&User{}, goxadmin.Config{
+	Register(&User{}, Config{
 		BeforeSave: func(obj interface{}) {
 			pointer := reflect.ValueOf(obj)
 			m := pointer.MethodByName("SetPassword")
@@ -314,6 +265,6 @@ func init() {
 			m.Call(args)
 		},
 	})
-	goxadmin.Register(&Permission{}, goxadmin.Config{})
-	goxadmin.Register(&Role{}, goxadmin.Config{})
+	Register(&Permission{}, Config{})
+	Register(&Role{}, Config{})
 }

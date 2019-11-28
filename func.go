@@ -1,18 +1,9 @@
-package auth
+package goxadmin
 
 import (
+	"github.com/kataras/iris/v12"
 	"reflect"
-	"github.com/wgbbiao/goxadmin"
 	"strings"
-)
-
-//常量
-const (
-	//权限
-	PolicyRead   string = "view"
-	PolicyWrite  string = "edit"
-	PolicyCreate string = "create"
-	PolicyDelete string = "delete"
 )
 
 //SyncPermissions 同步权限
@@ -23,7 +14,7 @@ func SyncPermissions() {
 		PolicyDelete,
 		PolicyWrite,
 	}
-	for _, model := range goxadmin.GetRegModels() {
+	for _, model := range GetRegModels() {
 		v := reflect.ValueOf(model)
 		method := v.MethodByName("Permissions")
 		newActs := acts
@@ -63,4 +54,21 @@ func GetModelName(m interface{}) string {
 	path := reflect.TypeOf(m).String()
 	path = strings.Replace(path, "*", "", 1)
 	return path
+}
+
+//GetActionByMethod 取得权限的名称
+func GetActionByMethod(method string) (action string) {
+	switch method {
+	case iris.MethodGet:
+		action = PolicyRead
+	case iris.MethodPost:
+		action = PolicyCreate
+	case iris.MethodPut:
+		action = PolicyWrite
+	case iris.MethodDelete:
+		action = PolicyDelete
+	default:
+		action = ""
+	}
+	return
 }
