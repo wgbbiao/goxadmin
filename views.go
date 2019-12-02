@@ -106,8 +106,11 @@ func CheckJWTAndSetUser(ctx iris.Context) {
 		var u User
 		x, _ := ctx.Values().Get("jwt").(*jwt.Token).Claims.(jwt.MapClaims)
 		if rt := u.GetUserByID(int(x["uid"].(float64))); !rt.RecordNotFound() && rt.Error == nil {
-			config := GetConfig(ctx.Params().Get("model"), ctx.Params().GetString("table"))
-			bl := HasPermissionForModel(&u, config.Model, GetActionByMethod(ctx.Method()))
+			bl := true
+			if ctx.Params().Get("model") != "" {
+				config := GetConfig(ctx.Params().Get("model"), ctx.Params().GetString("table"))
+				bl = HasPermissionForModel(&u, config.Model, GetActionByMethod(ctx.Method()))
+			}
 			if bl {
 				ctx.Values().Set("u", u)
 				ctx.Next()

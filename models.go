@@ -93,6 +93,7 @@ func (o *User) HasPermission(perm string) bool {
 //HasPermissionForModel 是否对那个model有权限
 func HasPermissionForModel(u *User, model interface{}, perm string) (bl bool) {
 	bl = false
+	fmt.Println("u.IsSuper == true:", u.IsSuper == true)
 	if u.IsSuper == true {
 		bl = true
 		return
@@ -103,13 +104,17 @@ func HasPermissionForModel(u *User, model interface{}, perm string) (bl bool) {
 	for _, role := range u.Roles {
 		rids = append(rids, role.ID)
 	}
-	ids = append(ids, getPermissionsFromRole(rids)...)
-	perms := getPermissionsForModel(model, perm)
-	for _, id := range ids {
-		for _, pe := range perms {
-			if id == pe.ID {
-				bl = true
-				return
+	if len(rids) > 0 {
+		ids = append(ids, getPermissionsFromRole(rids)...)
+		fmt.Println("ids:", ids)
+		perms := getPermissionsForModel(model, perm)
+		fmt.Println("perms:", perms)
+		for _, id := range ids {
+			for _, pe := range perms {
+				if id == pe.ID {
+					bl = true
+					return
+				}
 			}
 		}
 	}
