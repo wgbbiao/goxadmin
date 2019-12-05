@@ -3,15 +3,23 @@ package goxadmin
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	"github.com/kataras/iris/v12"
 )
 
+//DefaultModel 默认Model
+type DefaultModel struct {
+	ID        uint `gorm:"primary_key"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 //User 管理员
 type User struct {
-	Model
+	DefaultModel
 	Username    string        `gorm:"varchar(50);UNIQUE_INDEX" json:"username"`
 	Password    string        `gorm:"varchar(50)" json:"password,omitempty"`
 	Password2   string        `gorm:"-" json:"password2,omitempty"`
@@ -29,7 +37,7 @@ func (o User) TableName() string {
 
 //Role 用户角色
 type Role struct {
-	Model
+	DefaultModel
 	Name        string       `gorm:"varchar(50);" json:"name"`
 	Permissions []Permission `gorm:"many2many:xadmin_role_permission;association_autoupdate:false;association_autocreate:false" json:"permissions"`
 }
@@ -52,15 +60,28 @@ func (o UserRole) TableName() string {
 
 //Permission 权限表
 type Permission struct {
-	Model
-	Name  string `gorm:"varchar(50);" json:"name"`
-	Table string `gorm:"varchar(50);UNIQUE_INDEX:model_code" json:"model"`
-	Code  string `gorm:"varchar(10);UNIQUE_INDEX:model_code" json:"code"` //编码
+	DefaultModel
+	Name          string      `gorm:"varchar(50);" json:"name"`
+	ContentType   ContentType `json:"content_type"`
+	ContentTypeID uint        `gorm:"UNIQUE_INDEX:model_code" json:"content_type_id"`
+	Code          string      `gorm:"varchar(10);UNIQUE_INDEX:model_code" json:"code"` //编码
 }
 
-//TableName 用户的表名
+//TableName 权限的表名
 func (o Permission) TableName() string {
 	return "xadmin_permission"
+}
+
+//ContentType 内容类型
+type ContentType struct {
+	DefaultModel
+	AppLabel string `json:"app_label"`
+	Model    string `json:"model"`
+}
+
+//TableName 内容类型的表名
+func (o ContentType) TableName() string {
+	return "xadmin_content_type"
 }
 
 //RolePermission 组与权限的关系
@@ -93,7 +114,6 @@ func (o *User) HasPermission(perm string) bool {
 //HasPermissionForModel 是否对那个model有权限
 func HasPermissionForModel(u *User, model interface{}, perm string) (bl bool) {
 	bl = false
-	fmt.Println("u.IsSuper == true:", u.IsSuper == true)
 	if u.IsSuper == true {
 		bl = true
 		return
@@ -106,9 +126,7 @@ func HasPermissionForModel(u *User, model interface{}, perm string) (bl bool) {
 	}
 	if len(rids) > 0 {
 		ids = append(ids, getPermissionsFromRole(rids)...)
-		fmt.Println("ids:", ids)
 		perms := getPermissionsForModel(model, perm)
-		fmt.Println("perms:", perms)
 		for _, id := range ids {
 			for _, pe := range perms {
 				if id == pe.ID {
@@ -129,7 +147,7 @@ func getPermissionsFromRole(rids []uint) (ids []uint) {
 
 //getPermissions 取得权限
 func getPermissionsForModel(model interface{}, perm string) (perms []Permission) {
-	Db.Where(&Permission{Table: GetModelName(model), Code: perm}).Find(&perms)
+	Db.Where(&Permission{ContentType: GetModelName(model), Code: perm}).Find(&perms)
 	return
 }
 
@@ -145,8 +163,11 @@ func AddRole(code, name string) error {
 }
 
 //AddPermission 添加权限
-func AddPermission(model, code, name string) error {
-	db := Db.FirstOrCreate(&Permission{Code: code, Name: name, Table: model}, &Permission{Code: code, Table: model})
+func AddPermission(model ContentType, code string) error {
+	modelname := strings.ToLower(model.Model)
+	name := fmt.Sprintf("Can %s %s", code, modelname)
+	code = fmt.Sprintf("%s_%s", code, modelname)
+	db := Db.FirstOrCreate(&Permission{Code: code, Name: name, ContentType: model}, &Permission{Code: code, ContentTypeID: model.ID})
 	return db.Error
 }
 
@@ -193,28 +214,21 @@ func (o *User) GetPermission() (perms []Permission) {
 	Db.Model(&RolePermission{}).Where("role_id in (?)", roleid).Pluck("permission_id", &pids2)
 	pids = append(pids, pids2...)
 
-	// pids3 := make([]int, 0)
-	// Db.Table("document_user").Where("user_id = ?", o.ID).Joins("left join permission on document_user.act = permission.code and permission.model=?", "document.Document").Select("permission.id").Pluck("id", &pids3)
-	// pids = append(pids, pids3...)
-
-	Db.Where("id in (?)", pids).Find(&perms)
+	Db.Preload("ContentType").Where("id in (?)", pids).Find(&perms)
 	return perms
 }
 
 // GetPermissionInfo 取得权限信息
-func (o *User) GetPermissionInfo() (models []string, perms map[string][]string) {
-	// ps := o.GetPermission()
-	perms = make(map[string][]string)
-	models = make([]string, 0)
-	// for _, p := range ps {
-	// 	if conf.InArrayString(models, p.Model) == false {
-	// 		models = append(models, p.Model)
-	// 	}
-	// 	if _, ok := perms[p.Model]; ok == false {
-	// 		perms[p.Model] = make([]string, 0)
-	// 	}
-	// 	perms[p.Model] = append(perms[p.Model], p.Code)
-	// }
+func (o *User) GetPermissionInfo() (perms map[string][]string) {
+	ps := o.GetPermission()
+	perms = make(map[string][]string, 0)
+	for _, p := range ps {
+		modelPath := fmt.Sprintf("%s.%s", p.ContentType.AppLabel, p.ContentType.Model)
+		if _, ok := perms[modelPath]; !ok {
+			perms[modelPath] = make([]string, 0)
+		}
+		perms[modelPath] = append(perms[modelPath], p.Code)
+	}
 	return
 }
 
@@ -242,6 +256,7 @@ func AutoMigrate() {
 		&Permission{},
 		&RolePermission{},
 		&PermissionUser{},
+		&ContentType{},
 	)
 	Db.Model(&PermissionUser{}).AddForeignKey("user_id", "xadmin_user(id)", "cascade", "cascade")
 }

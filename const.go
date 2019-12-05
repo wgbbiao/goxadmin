@@ -20,8 +20,8 @@ const (
 
 //权限
 const (
-	PolicyRead   string = "view"
-	PolicyWrite  string = "edit"
+	PolicyView   string = "view"
+	PolicyUpdate string = "update"
 	PolicyCreate string = "create"
 	PolicyDelete string = "delete"
 )

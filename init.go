@@ -3,7 +3,6 @@ package goxadmin
 import (
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/jinzhu/gorm"
 
@@ -22,6 +21,7 @@ type Handle struct {
 	Method []string
 	Func   func(ctx iris.Context)
 	Jwt    bool
+	// Permissions []string //所需要的权限
 }
 
 //Handles 自定义handle
@@ -54,13 +54,6 @@ func (c *Config) Title() string {
 var Db *gorm.DB
 
 var models map[string]Config
-
-//Model 默认Model
-type Model struct {
-	ID        uint `gorm:"primary_key"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
 
 // //GetInfo 取得表结构（字段信息用于前台表单创建）
 // func GetInfo(ctx iris.Context) {

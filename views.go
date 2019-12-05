@@ -65,12 +65,11 @@ func Login(c iris.Context) {
 //GetInfo 取得用户信息
 func GetInfo(c iris.Context) {
 	u := c.Values().Get("u").(User)
-	models, permissions := u.GetPermissionInfo()
+	permissions := u.GetPermissionInfo()
 	c.JSON(iris.Map{
 		"status":      "success",
 		"username":    u.Username,
 		"isSuper":     u.IsSuper,
-		"models":      models,
 		"permissions": permissions,
 	})
 }

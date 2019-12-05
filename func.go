@@ -20,13 +20,13 @@ func Cmd5(txt, salt string) string {
 	return hex.EncodeToString(st)
 }
 
-//SyncPermissions 同步权限
+//SyncPermissions 同步权限,同步
 func SyncPermissions() {
 	acts := []string{
 		PolicyCreate,
-		PolicyRead,
+		PolicyView,
 		PolicyDelete,
-		PolicyWrite,
+		PolicyUpdate,
 	}
 	for _, model := range GetRegModels() {
 		v := reflect.ValueOf(model)
@@ -43,10 +43,9 @@ func SyncPermissions() {
 			dd := values[0].Interface()
 			newActs = append(newActs, dd.([]string)...)
 		}
-		modelname := GetVerboseName(model)
 		table := GetModelName(model)
 		for _, act := range newActs {
-			AddPermission(table, act, modelname)
+			AddPermission(table, act)
 		}
 	}
 }
@@ -64,21 +63,25 @@ func GetVerboseName(m interface{}) string {
 }
 
 //GetModelName 取得model名称
-func GetModelName(m interface{}) string {
+func GetModelName(m interface{}) (ct ContentType) {
 	path := reflect.TypeOf(m).String()
 	path = strings.Replace(path, "*", "", 1)
-	return path
+	paths := strings.Split(path, ".")
+	ct.AppLabel = paths[0]
+	ct.Model = paths[1]
+	Db.FirstOrCreate(&ct, ct)
+	return
 }
 
 //GetActionByMethod 取得权限的名称
 func GetActionByMethod(method string) (action string) {
 	switch method {
 	case iris.MethodGet:
-		action = PolicyRead
+		action = PolicyView
 	case iris.MethodPost:
 		action = PolicyCreate
 	case iris.MethodPut:
-		action = PolicyWrite
+		action = PolicyUpdate
 	case iris.MethodDelete:
 		action = PolicyDelete
 	default:
