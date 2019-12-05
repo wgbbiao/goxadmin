@@ -25,11 +25,10 @@ func main() {
 	DB.DB().SetMaxIdleConns(50)
 	DB.DB().SetMaxOpenConns(50)
 	DB.DB().SetConnMaxLifetime(time.Duration(1000) * time.Second)
-	goxadmin.Db = DB
-	goxadmin.AutoMigrate()     //生成表结构
-	goxadmin.SyncPermissions() //同步权限
 	r := iris.New()
-	goxadmin.Init(r)
+	goxadmin.SetDb(DB)
+	goxadmin.SetIris(r.Party("/admin"))
+	goxadmin.Init()
 
 	for _, _r := range r.GetRoutes() {
 		fmt.Println(_r)

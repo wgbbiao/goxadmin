@@ -94,10 +94,21 @@ func RegisterView(handle ...Handle) {
 	Handles = append(Handles, handle...)
 }
 
-//Init Init
-func Init(r iris.Party) {
-	JwtCheckFunc = CheckJWTAndSetUser
+//SetIris 设置http
+func SetIris(r iris.Party) {
 	XadminIrisParty = r
+}
+
+//SetDb 设置数据库
+func SetDb(db *gorm.DB) {
+	Db = db
+}
+
+//Init Init
+func Init() {
+	JwtCheckFunc = CheckJWTAndSetUser
+	AutoMigrate()     //生成表结构
+	SyncPermissions() //同步权限
 	for _, handel := range Handles {
 		for _, method := range handel.Method {
 			if handel.Jwt {
@@ -107,9 +118,9 @@ func Init(r iris.Party) {
 			}
 		}
 	}
-	XadminIrisParty.Get("{model:string}/{table:string}", JwtCheckFunc, ListHandel)
-	XadminIrisParty.Get("{model:string}/{table:string}/{id:int}", JwtCheckFunc, DetailHandel)
-	XadminIrisParty.Put("{model:string}/{table:string}/{id:int}", JwtCheckFunc, UpdateHandel)
-	XadminIrisParty.Post("{model:string}/{table:string}", JwtCheckFunc, PostHandel)
-	XadminIrisParty.Delete("{model:string}/{table:string}/{id:int}", JwtCheckFunc, DeleteHandel)
+	XadminIrisParty.Get("/{model:string}/{table:string}", JwtCheckFunc, ListHandel)
+	XadminIrisParty.Get("/{model:string}/{table:string}/{id:int}", JwtCheckFunc, DetailHandel)
+	XadminIrisParty.Put("/{model:string}/{table:string}/{id:int}", JwtCheckFunc, UpdateHandel)
+	XadminIrisParty.Post("/{model:string}/{table:string}", JwtCheckFunc, PostHandel)
+	XadminIrisParty.Delete("/{model:string}/{table:string}/{id:int}", JwtCheckFunc, DeleteHandel)
 }
