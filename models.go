@@ -124,15 +124,21 @@ func HasPermissionForModel(u *User, model interface{}, perm string) (bl bool) {
 	for _, role := range u.Roles {
 		rids = append(rids, role.ID)
 	}
+	//把角色里的权限查出来
 	if len(rids) > 0 {
 		ids = append(ids, getPermissionsFromRole(rids)...)
-		perms := getPermissionsForModel(model, perm)
-		for _, id := range ids {
-			for _, pe := range perms {
-				if id == pe.ID {
-					bl = true
-					return
-				}
+	}
+
+	for _, p := range u.GetPermission() {
+		ids = append(ids, p.ID)
+	}
+	perms := getPermissionsForModel(model, perm)
+	fmt.Println("perms:", perms)
+	for _, id := range ids {
+		for _, pe := range perms {
+			if id == pe.ID {
+				bl = true
+				return
 			}
 		}
 	}
@@ -147,7 +153,9 @@ func getPermissionsFromRole(rids []uint) (ids []uint) {
 
 //getPermissions 取得权限
 func getPermissionsForModel(model interface{}, perm string) (perms []Permission) {
-	Db.Where(&Permission{ContentType: GetModelName(model), Code: perm}).Find(&perms)
+	ct := GetModelName(model)
+	code := GenCodeName(perm, ct.Model)
+	Db.Where(&Permission{ContentTypeID: ct.ID, Code: code}).Find(&perms)
 	return
 }
 
@@ -166,7 +174,7 @@ func AddRole(code, name string) error {
 func AddPermission(model ContentType, code string) error {
 	modelname := strings.ToLower(model.Model)
 	name := fmt.Sprintf("Can %s %s", code, modelname)
-	code = fmt.Sprintf("%s_%s", code, modelname)
+	code = GenCodeName(code, modelname)
 	db := Db.FirstOrCreate(&Permission{Code: code, Name: name, ContentType: model}, &Permission{Code: code, ContentTypeID: model.ID})
 	return db.Error
 }

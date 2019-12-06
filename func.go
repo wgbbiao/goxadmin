@@ -90,6 +90,11 @@ func GetActionByMethod(method string) (action string) {
 	return
 }
 
+//GenCodeName 取得权限名称
+func GenCodeName(code, modelname string) string {
+	return fmt.Sprintf("%s_%s", code, strings.ToLower(modelname))
+}
+
 //GetConfig 取得配置文件
 func GetConfig(model, table string) Config {
 	return models[fmt.Sprintf("%s/%s", model, table)]
