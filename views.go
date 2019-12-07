@@ -154,7 +154,7 @@ func ListHandel(ctx iris.Context) {
 		params := ctx.URLParams()
 		cnt := 0
 
-		err := Db.Set("gorm:auto_preload", true).Scopes(MapToWhere(params, config)).
+		err := Db.Scopes(MapToWhere(params, config)).
 			Limit(limit).
 			Offset(offset).
 			Find(rs).
@@ -184,7 +184,8 @@ func DetailHandel(ctx iris.Context) {
 		ctx.StatusCode(iris.StatusForbidden)
 	} else {
 		obj := GetVal(config.Model)
-		if err := Db.Set("gorm:auto_preload", true).First(obj, id).Error; err == nil {
+		params := ctx.URLParams()
+		if err := Db.Scopes(MapToWhere(params, config)).First(obj, id).Error; err == nil {
 			ctx.JSON(iris.Map{
 				"data": obj,
 			})
@@ -293,6 +294,7 @@ func UpdateHandel(ctx iris.Context) {
 				})
 			}
 		} else {
+			fmt.Println(err)
 			ctx.StatusCode(iris.StatusBadRequest)
 			ctx.JSON(iris.Map{
 				"status": HTTPFail,

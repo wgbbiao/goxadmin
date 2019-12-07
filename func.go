@@ -144,6 +144,15 @@ func MapToWhere(status map[string]string, config Config) func(db *gorm.DB) *gorm
 		} else {
 			db = db.Order(gorm.Expr("? ASC", order))
 		}
+		preloads, ok := status["preloads"]
+		fmt.Println(preloads)
+		if ok == false {
+			db = db.Set("gorm:auto_preload", true)
+		} else {
+			for _, p := range strings.Split(preloads, ",") {
+				db = db.Preload(p)
+			}
+		}
 		return db
 	}
 }
