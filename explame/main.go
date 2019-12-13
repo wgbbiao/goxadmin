@@ -26,22 +26,35 @@ func main() {
 	DB.DB().SetMaxOpenConns(50)
 	DB.DB().SetConnMaxLifetime(time.Duration(1000) * time.Second)
 	r := iris.New()
-	goxadmin.SetDb(DB)
-	goxadmin.SetIris(r.Party("/admin"))
-	goxadmin.Init()
-
-	for _, _r := range r.GetRoutes() {
-		fmt.Println(_r)
-	}
-	r.Run(iris.Addr("127.0.0.1:8099"), iris.WithConfiguration(iris.Configuration{
+	xadmin := goxadmin.NewXadmin(DB, r, goxadmin.CheckJWTAndSetUser)
+	xadmin.Init()
+	r.Run(iris.Addr(":9999"), iris.WithConfiguration(iris.Configuration{
 		DisableStartupLog:                 false,
 		DisableInterruptHandler:           false,
 		DisablePathCorrection:             false,
 		EnablePathEscape:                  false,
-		FireMethodNotAllowed:              true,
+		FireMethodNotAllowed:              false,
 		DisableBodyConsumptionOnUnmarshal: false,
 		DisableAutoFireStatusCode:         true,
 		TimeFormat:                        "Mon, 02 Jan 2006 15:04:05 GMT",
 		Charset:                           "UTF-8",
 	}))
+	// dd := DB.NewScope(goxadmin.User{})
+	// field, ok := dd.FieldByName("Permissions")
+	// fmt.Println(ok)
+	// b, _ := json.Marshal(field.Relationship)
+	// var str bytes.Buffer
+	// _ = json.Indent(&str, b, "", "    ")
+	// fmt.Println("formated: ", str.String())
+	// fmt.Println("data: ", string(b))
+
+	// kids := make([]goxadmin.User, 0)
+	// params := make(map[string]string)
+	// params["_p_permissions.name__like"] = "view"
+	// DB.Scopes(goxadmin.MapToWhere(params, goxadmin.Config{
+	// 	Model: &goxadmin.User{},
+	// })).Find(&kids)
+	// // models.DB.Joins("left join user on kid.user_id = user.id").
+	// // Where("user.mobile = ?", "13466625910").Find(&kids)
+	// fmt.Println(kids)
 }

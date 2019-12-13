@@ -24,9 +24,6 @@ type Handle struct {
 	// Permissions []string //所需要的权限
 }
 
-//Handles 自定义handle
-var Handles []Handle
-
 // Config Config
 type Config struct {
 	ListField []string //列表页字段
@@ -50,10 +47,30 @@ func (c *Config) Title() string {
 	return "Title"
 }
 
-//Db Db
+//XadminConfig 配置
+type XadminConfig struct {
+	Models       map[string]Config
+	Db           *gorm.DB
+	Handles      []Handle
+	IrisParty    iris.Party
+	JwtCheckFunc func(c iris.Context)
+}
+
+//Db 数据库配置
 var Db *gorm.DB
 
-var models map[string]Config
+//Xadmin 配置实例
+var Xadmin *XadminConfig
+
+//NewXadmin 新建配置
+func NewXadmin(db *gorm.DB, iris iris.Party) *XadminConfig {
+	Db = db
+	Xadmin = &XadminConfig{
+		IrisParty: iris,
+		Models:    make(map[string]Config),
+	}
+	return Xadmin
+}
 
 // //GetInfo 取得表结构（字段信息用于前台表单创建）
 // func GetInfo(ctx iris.Context) {
@@ -61,21 +78,19 @@ var models map[string]Config
 // }
 
 //Register Register
-func Register(model interface{}, config Config) {
-	if models == nil {
-		models = make(map[string]Config)
-	}
+func (o *XadminConfig) Register(model interface{}, config Config) {
 	resType := reflect.TypeOf(model)
 	config.Model = model
 
 	modelname := strings.Replace(resType.String(), "*", "", 1)
 	modelname = strings.Replace(modelname, ".", "/", 1)
-	models[modelname] = config
+	// models[modelname] = config
+	o.Models[modelname] = config
 }
 
 //GetRegModels GetRegModels
-func GetRegModels() (ms []interface{}) {
-	for _, conf := range models {
+func (o *XadminConfig) GetRegModels() (ms []interface{}) {
+	for _, conf := range o.Models {
 		ms = append(ms, conf.Model)
 	}
 	return
@@ -86,41 +101,50 @@ func Setdb(d *gorm.DB) {
 	Db = d
 }
 
-//XadminIrisParty XadminIrisParty
-var XadminIrisParty iris.Party
-
 //RegisterView 注册新的api
-func RegisterView(handle ...Handle) {
-	Handles = append(Handles, handle...)
+func (o *XadminConfig) RegisterView(handle ...Handle) {
+	o.Handles = append(o.Handles, handle...)
 }
 
 //SetIris 设置http
-func SetIris(r iris.Party) {
-	XadminIrisParty = r
+func (o *XadminConfig) SetIris(r iris.Party) {
+	o.IrisParty = r
 }
 
 //SetDb 设置数据库
-func SetDb(db *gorm.DB) {
-	Db = db
+func (o *XadminConfig) SetDb(db *gorm.DB) {
+	o.Db = db
+}
+
+//SetJwtCheck 设置jwt检查函数
+func (o *XadminConfig) SetJwtCheck(f func(c iris.Context)) {
+	o.JwtCheckFunc = f
 }
 
 //Init Init
-func Init() {
-	JwtCheckFunc = CheckJWTAndSetUser
-	AutoMigrate()     //生成表结构
-	SyncPermissions() //同步权限
-	for _, handel := range Handles {
+func (o *XadminConfig) Init() {
+	// JwtCheckFunc = CheckJWTAndSetUser
+	o.AutoMigrate()     //生成表结构
+	o.SyncPermissions() //同步权限
+	o.initUser()
+	initValidator()
+
+	if o.JwtCheckFunc == nil {
+		o.JwtCheckFunc = CheckJWTAndSetUser
+	}
+	for _, handel := range o.Handles {
 		for _, method := range handel.Method {
 			if handel.Jwt {
-				XadminIrisParty.Handle(method, handel.Path, JwtCheckFunc, handel.Func)
+				o.IrisParty.Handle(method, handel.Path, o.JwtCheckFunc, handel.Func)
 			} else {
-				XadminIrisParty.Handle(method, handel.Path, handel.Func)
+				o.IrisParty.Handle(method, handel.Path, handel.Func)
 			}
 		}
 	}
-	XadminIrisParty.Get("/{model:string}/{table:string}", JwtCheckFunc, ListHandel)
-	XadminIrisParty.Get("/{model:string}/{table:string}/{id:int}", JwtCheckFunc, DetailHandel)
-	XadminIrisParty.Put("/{model:string}/{table:string}/{id:int}", JwtCheckFunc, UpdateHandel)
-	XadminIrisParty.Post("/{model:string}/{table:string}", JwtCheckFunc, PostHandel)
-	XadminIrisParty.Delete("/{model:string}/{table:string}/{id:int}", JwtCheckFunc, DeleteHandel)
+
+	o.IrisParty.Get("/{model:string}/{table:string}", o.JwtCheckFunc, ListHandel)
+	o.IrisParty.Get("/{model:string}/{table:string}/{id:int}", o.JwtCheckFunc, DetailHandel)
+	o.IrisParty.Put("/{model:string}/{table:string}/{id:int}", o.JwtCheckFunc, UpdateHandel)
+	o.IrisParty.Post("/{model:string}/{table:string}", o.JwtCheckFunc, PostHandel)
+	o.IrisParty.Delete("/{model:string}/{table:string}/{id:int}", o.JwtCheckFunc, DeleteHandel)
 }

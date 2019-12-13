@@ -1,8 +1,10 @@
 package goxadmin
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -21,14 +23,14 @@ func Cmd5(txt, salt string) string {
 }
 
 //SyncPermissions 同步权限,同步
-func SyncPermissions() {
+func (o *XadminConfig) SyncPermissions() {
 	acts := []string{
 		PolicyCreate,
 		PolicyView,
 		PolicyDelete,
 		PolicyUpdate,
 	}
-	for _, model := range GetRegModels() {
+	for _, model := range o.GetRegModels() {
 		v := reflect.ValueOf(model)
 		method := v.MethodByName("Permissions")
 		newActs := acts
@@ -97,15 +99,37 @@ func GenCodeName(code, modelname string) string {
 
 //GetConfig 取得配置文件
 func GetConfig(model, table string) Config {
-	return models[fmt.Sprintf("%s/%s", model, table)]
+	return Xadmin.Models[fmt.Sprintf("%s/%s", model, table)]
+}
+
+//ShowJSON 格式化json
+func ShowJSON(data interface{}) {
+	b, _ := json.Marshal(data)
+	var str bytes.Buffer
+	_ = json.Indent(&str, b, "", "    ")
+	fmt.Println("formated: ", str.String())
 }
 
 //MapToWhere map转成gorm需要的搜索条件
-func MapToWhere(status map[string]string, config Config) func(db *gorm.DB) *gorm.DB {
+func MapToWhere(params map[string]string, config Config) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		for k, v := range status {
+		scope := db.NewScope(config.Model)
+		for k, v := range params {
 			if strings.HasPrefix(k, "_p_") {
 				k = strings.Replace(k, "_p_", "", -1)
+				if strings.Contains(k, ".") {
+					tmp := strings.Split(k, ".")
+					tableName := tmp[0]
+					field, ok := scope.FieldByName(tableName)
+					if ok {
+						sqls := []string{}
+						sqls = append(sqls, "LEFT JOIN "+scope.Quote(field.DBName)+" ON ")
+						sqls = append(sqls, scope.QuotedTableName()+"."+scope.Quote(strings.Join(field.Relationship.ForeignDBNames, "")))
+						sqls = append(sqls, "="+scope.Quote(field.DBName)+".")
+						sqls = append(sqls, scope.Quote(strings.Join(field.Relationship.AssociationForeignFieldNames, "")))
+						db = db.Joins(strings.Join(sqls, ""))
+					}
+				}
 				fields := strings.Split(k, "__")
 				field := fields[0]
 				paramType := fields[1]
@@ -131,7 +155,7 @@ func MapToWhere(status map[string]string, config Config) func(db *gorm.DB) *gorm
 				}
 			}
 		}
-		order, ok := status["o"]
+		order, ok := params["o"]
 		if ok == false {
 			if config.Sort != "" {
 				order = config.Sort
@@ -144,10 +168,9 @@ func MapToWhere(status map[string]string, config Config) func(db *gorm.DB) *gorm
 		} else {
 			db = db.Order(gorm.Expr("? ASC", order))
 		}
-		preloads, ok := status["preloads"]
-		fmt.Println(preloads)
+		preloads, ok := params["preloads"]
 		if ok == false {
-			db = db.Set("gorm:auto_preload", true)
+			db = db.Set("gorm:auto_preload", false)
 		} else {
 			for _, p := range strings.Split(preloads, ",") {
 				db = db.Preload(p)

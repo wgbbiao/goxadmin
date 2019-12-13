@@ -256,7 +256,7 @@ func (o *User) SetPassword() {
 }
 
 //AutoMigrate AutoMigrate
-func AutoMigrate() {
+func (o *XadminConfig) AutoMigrate() {
 	Db.AutoMigrate(
 		&User{},
 		&Role{},
@@ -269,9 +269,8 @@ func AutoMigrate() {
 	Db.Model(&PermissionUser{}).AddForeignKey("user_id", "xadmin_user(id)", "cascade", "cascade")
 }
 
-func init() {
-	initValidator()
-	RegisterView(
+func (o *XadminConfig) initUser() {
+	o.RegisterView(
 		Handle{
 			Path:   "/login",
 			Method: []string{iris.MethodPost},
@@ -285,7 +284,7 @@ func init() {
 			Jwt:    true,
 		})
 
-	Register(&User{}, Config{
+	o.Register(&User{}, Config{
 		BeforeSave: func(obj interface{}) {
 			pointer := reflect.ValueOf(obj)
 			m := pointer.MethodByName("SetPassword")
@@ -293,6 +292,6 @@ func init() {
 			m.Call(args)
 		},
 	})
-	Register(&Permission{}, Config{})
-	Register(&Role{}, Config{})
+	o.Register(&Permission{}, Config{})
+	o.Register(&Role{}, Config{})
 }

@@ -154,7 +154,7 @@ func ListHandel(ctx iris.Context) {
 		params := ctx.URLParams()
 		cnt := 0
 
-		err := Db.Scopes(MapToWhere(params, config)).
+		err := Db.Set("gorm:auto_preload", false).Scopes(MapToWhere(params, config)).
 			Limit(limit).
 			Offset(offset).
 			Find(rs).
