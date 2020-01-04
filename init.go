@@ -12,6 +12,9 @@ import (
 //JwtKey JwtKey
 var JwtKey string = "Auys7;fq272/csH6"
 
+//JwtTimeOut jwt过期时间
+var JwtTimeOut int64 = 86400
+
 // JwtCheckFunc JwtCheckFunc
 var JwtCheckFunc func(c iris.Context)
 
@@ -142,6 +145,7 @@ func (o *XadminConfig) Init() {
 		}
 	}
 
+	o.IrisParty.Get("/refreshjwt", o.JwtCheckFunc, RefreshJwt)
 	o.IrisParty.Get("/{model:string}/{table:string}", o.JwtCheckFunc, ListHandel)
 	o.IrisParty.Get("/{model:string}/{table:string}/{id:int}", o.JwtCheckFunc, DetailHandel)
 	o.IrisParty.Put("/{model:string}/{table:string}/{id:int}", o.JwtCheckFunc, UpdateHandel)

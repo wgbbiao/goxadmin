@@ -13,6 +13,17 @@ import (
 	"github.com/wxnacy/wgo/arrays"
 )
 
+func getToken(c iris.Context, u User) (tokenString string) {
+	claim := jwt.MapClaims{
+		"exp": time.Now().Unix() + JwtTimeOut,
+		"uid": u.ID,
+	}
+
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
+	tokenString, _ = accessToken.SignedString([]byte(JwtKey))
+	return
+}
+
 //Login 用户登录
 func Login(c iris.Context) {
 	type Form struct {
@@ -36,13 +47,7 @@ func Login(c iris.Context) {
 			})
 		} else {
 			if u.CheckPassword(form.Password) {
-				claim := jwt.MapClaims{
-					"exp": time.Now().Unix() + 86400,
-					"uid": u.ID,
-				}
-
-				accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
-				tokenString, _ := accessToken.SignedString([]byte(JwtKey))
+				tokenString := getToken(c, u)
 				u.UpdateInfo(map[string]interface{}{
 					"last_login_at": time.Now(),
 				})
@@ -60,6 +65,17 @@ func Login(c iris.Context) {
 			}
 		}
 	}
+}
+
+//RefreshJwt 刷新jwt
+func RefreshJwt(c iris.Context) {
+	u := c.Values().Get("u").(User)
+	tokenString := getToken(c, u)
+	c.JSON(iris.Map{
+		"status": HTTPSuccess,
+		"token":  tokenString,
+		// "username": u.Username,
+	})
 }
 
 //GetInfo 取得用户信息
