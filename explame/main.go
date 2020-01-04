@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/iris-contrib/middleware/cors"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql" //mysql
 	"github.com/kataras/iris/v12"
@@ -14,7 +15,7 @@ func main() {
 	DB, _ := gorm.Open("mysql", fmt.Sprintf("%s:%s@%s/%s?charset=utf8mb4&interpolateParams=true&parseTime=True&loc=Local",
 		"root",
 		"123456",
-		"tcp(192.168.1.153:3306)",
+		"tcp(192.168.3.158:3306)",
 		"app_rowclub"))
 
 	DB.LogMode(true)
@@ -25,9 +26,32 @@ func main() {
 	DB.DB().SetMaxIdleConns(50)
 	DB.DB().SetMaxOpenConns(50)
 	DB.DB().SetConnMaxLifetime(time.Duration(1000) * time.Second)
+	// time.LoadLocation(cfg.Section("system").Key("location").String())
+	crs := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowCredentials: true,
+		AllowedMethods:   []string{"GET", "POST", "DELETE", "PUT"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "Accept", "Origin"},
+	})
+
 	r := iris.New()
-	xadmin := goxadmin.NewXadmin(DB, r, goxadmin.CheckJWTAndSetUser)
+	r.Use(crs)
+	r.Use(func(ctx iris.Context) {
+		ctx.Gzip(true)
+		ctx.Next()
+	})
+	r.Options("{root:path}", func(context iris.Context) {
+		context.Header("Access-Control-Allow-Credentials", "true")
+		context.Header("Access-Control-Allow-Headers", "Origin,Authorization,Content-Type,Accept,X-Total,X-Limit,X-Offset")
+		context.Header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS,HEAD")
+		context.Header("Access-Control-Allow-Origin", "*")
+		context.Header("Access-Control-Expose-Headers", "Content-Length,Content-Encoding,Content-Type")
+	})
+	xadmin := goxadmin.NewXadmin(DB, r.Party("/admin"))
 	xadmin.Init()
+	for _, _r := range r.GetRoutes() {
+		fmt.Println(_r)
+	}
 	r.Run(iris.Addr(":9999"), iris.WithConfiguration(iris.Configuration{
 		DisableStartupLog:                 false,
 		DisableInterruptHandler:           false,
