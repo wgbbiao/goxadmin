@@ -64,7 +64,7 @@ type Permission struct {
 	Name          string      `gorm:"type:varchar(50);" json:"name"`
 	ContentType   ContentType `json:"content_type"`
 	ContentTypeID uint        `gorm:"UNIQUE_INDEX:model_code" json:"content_type_id"`
-	Code          string      `gorm:"type:varchar(10);UNIQUE_INDEX:model_code" json:"code"` //编码
+	Code          string      `gorm:"type:varchar(50);UNIQUE_INDEX:model_code" json:"code"` //编码
 }
 
 //TableName 权限的表名
