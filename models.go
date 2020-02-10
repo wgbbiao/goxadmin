@@ -20,10 +20,10 @@ type DefaultModel struct {
 //User 管理员
 type User struct {
 	DefaultModel
-	Username    string        `gorm:"varchar(50);UNIQUE_INDEX" json:"username"`
-	Password    string        `gorm:"varchar(50)" json:"password,omitempty"`
+	Username    string        `gorm:"type:varchar(50)" json:"username"`
+	Password    string        `gorm:"type:varchar(50)" json:"password,omitempty"`
 	Password2   string        `gorm:"-" json:"password2,omitempty"`
-	Salt        string        `gorm:"varchar(64)" json:"-,omitempty"`
+	Salt        string        `gorm:"type:varchar(64)" json:"-,omitempty"`
 	IsSuper     bool          `gorm:"default:false" json:"is_super"`
 	LastLoginAt *time.Time    `gorm:"type:datetime;null" json:"last_login_at"`
 	Roles       []*Role       `gorm:"many2many:xadmin_user_role;association_autoupdate:false;association_autocreate:false" json:"roles"`
@@ -38,7 +38,7 @@ func (o User) TableName() string {
 //Role 用户角色
 type Role struct {
 	DefaultModel
-	Name        string       `gorm:"varchar(50);" json:"name"`
+	Name        string       `gorm:"type:varchar(50);" json:"name"`
 	Permissions []Permission `gorm:"many2many:xadmin_role_permission;association_autoupdate:false;association_autocreate:false" json:"permissions"`
 }
 
@@ -61,10 +61,10 @@ func (o UserRole) TableName() string {
 //Permission 权限表
 type Permission struct {
 	DefaultModel
-	Name          string      `gorm:"varchar(50);" json:"name"`
+	Name          string      `gorm:"type:varchar(50);" json:"name"`
 	ContentType   ContentType `json:"content_type"`
 	ContentTypeID uint        `gorm:"UNIQUE_INDEX:model_code" json:"content_type_id"`
-	Code          string      `gorm:"varchar(10);UNIQUE_INDEX:model_code" json:"code"` //编码
+	Code          string      `gorm:"type:varchar(10);UNIQUE_INDEX:model_code" json:"code"` //编码
 }
 
 //TableName 权限的表名
