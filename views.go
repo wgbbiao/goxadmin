@@ -310,7 +310,6 @@ func UpdateHandel(ctx iris.Context) {
 				})
 			}
 		} else {
-			fmt.Println(err)
 			ctx.StatusCode(iris.StatusBadRequest)
 			ctx.JSON(iris.Map{
 				"status": HTTPFail,

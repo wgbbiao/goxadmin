@@ -37,11 +37,6 @@ func (o *XadminConfig) SyncPermissions() {
 		if method.Kind() == reflect.Func {
 			args := make([]reflect.Value, 0)
 			values := method.Call(args)
-			// 	for _, val := range values[0].([]) {
-			// 		fmt.Println(val.String())
-			// 		newActs = append(newActs, val.String())
-			// 	}
-			// fmt.Println(values[0])
 			dd := values[0].Interface()
 			newActs = append(newActs, dd.([]string)...)
 		}

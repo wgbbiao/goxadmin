@@ -66,11 +66,10 @@ var Db *gorm.DB
 var Xadmin *XadminConfig
 
 //NewXadmin 新建配置
-func NewXadmin(db *gorm.DB, iris iris.Party) *XadminConfig {
+func NewXadmin(db *gorm.DB) *XadminConfig {
 	Db = db
 	Xadmin = &XadminConfig{
-		IrisParty: iris,
-		Models:    make(map[string]Config),
+		Models: make(map[string]Config),
 	}
 	return Xadmin
 }
@@ -127,8 +126,6 @@ func (o *XadminConfig) SetJwtCheck(f func(c iris.Context)) {
 //Init Init
 func (o *XadminConfig) Init() {
 	// JwtCheckFunc = CheckJWTAndSetUser
-	o.AutoMigrate()     //生成表结构
-	o.SyncPermissions() //同步权限
 	o.initUser()
 	initValidator()
 
@@ -146,9 +143,9 @@ func (o *XadminConfig) Init() {
 	}
 
 	o.IrisParty.Get("/refreshjwt", o.JwtCheckFunc, RefreshJwt)
-	o.IrisParty.Get("/{model:string}/{table:string}", o.JwtCheckFunc, ListHandel)
-	o.IrisParty.Get("/{model:string}/{table:string}/{id:int}", o.JwtCheckFunc, DetailHandel)
-	o.IrisParty.Put("/{model:string}/{table:string}/{id:int}", o.JwtCheckFunc, UpdateHandel)
-	o.IrisParty.Post("/{model:string}/{table:string}", o.JwtCheckFunc, PostHandel)
-	o.IrisParty.Delete("/{model:string}/{table:string}/{id:int}", o.JwtCheckFunc, DeleteHandel)
+	o.IrisParty.Get("/{model:string  min(3)}/{table:string  min(3)}", o.JwtCheckFunc, ListHandel)
+	o.IrisParty.Get("/{model:string  min(3)}/{table:string  min(3)}/{id:int}", o.JwtCheckFunc, DetailHandel)
+	o.IrisParty.Put("/{model:string  min(3)}/{table:string  min(3)}/{id:int}", o.JwtCheckFunc, UpdateHandel)
+	o.IrisParty.Post("/{model:string  min(3)}/{table:string  min(3)}", o.JwtCheckFunc, PostHandel)
+	o.IrisParty.Delete("/{model:string  min(3)}/{table:string  min(3)}/{id:int}", o.JwtCheckFunc, DeleteHandel)
 }

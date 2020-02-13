@@ -47,7 +47,10 @@ func main() {
 		context.Header("Access-Control-Allow-Origin", "*")
 		context.Header("Access-Control-Expose-Headers", "Content-Length,Content-Encoding,Content-Type")
 	})
-	xadmin := goxadmin.NewXadmin(DB, r.Party("/admin"))
+	xadmin := goxadmin.NewXadmin(DB)
+	xadmin.SetIris(r.Party("/admin"))
+	xadmin.AutoMigrate()
+	xadmin.SyncPermissions()
 	xadmin.Init()
 	for _, _r := range r.GetRoutes() {
 		fmt.Println(_r)

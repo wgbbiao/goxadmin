@@ -20,7 +20,7 @@ type DefaultModel struct {
 //User 管理员
 type User struct {
 	DefaultModel
-	Username    string        `gorm:"type:varchar(50)" json:"username"`
+	Username    string        `gorm:"type:varchar(50);UNIQUE" json:"username"`
 	Password    string        `gorm:"type:varchar(50)" json:"password,omitempty"`
 	Password2   string        `gorm:"-" json:"password2,omitempty"`
 	Salt        string        `gorm:"type:varchar(64)" json:"-,omitempty"`
@@ -133,7 +133,6 @@ func HasPermissionForModel(u *User, model interface{}, perm string) (bl bool) {
 		ids = append(ids, p.ID)
 	}
 	perms := getPermissionsForModel(model, perm)
-	fmt.Println("perms:", perms)
 	for _, id := range ids {
 		for _, pe := range perms {
 			if id == pe.ID {
@@ -199,10 +198,10 @@ func (o *User) UpdateInfo(info interface{}) *gorm.DB {
 
 //AddUser 添加管理员用户
 //guangbiao
-func AddUser(username, password string) (u User, err error) {
+func AddUser(username, password string, IsSuper bool) (u User, err error) {
 	salt := fmt.Sprintf("%d", time.Now().Unix())
 	pass := Cmd5(password, salt)
-	u = User{Username: username, Password: pass, Salt: salt}
+	u = User{Username: username, Password: pass, Salt: salt, IsSuper: IsSuper}
 	db := Db.Create(&u)
 	err = db.Error
 	return
@@ -257,16 +256,23 @@ func (o *User) SetPassword() {
 
 //AutoMigrate AutoMigrate
 func (o *XadminConfig) AutoMigrate() {
-	Db.AutoMigrate(
-		&User{},
-		&Role{},
-		&UserRole{},
-		&Permission{},
-		&RolePermission{},
-		&PermissionUser{},
-		&ContentType{},
-	)
-	Db.Model(&PermissionUser{}).AddForeignKey("user_id", "xadmin_user(id)", "cascade", "cascade")
+	Db.
+		AutoMigrate(
+			&User{},
+			&Role{},
+			&UserRole{},
+			&Permission{},
+			&RolePermission{},
+			&PermissionUser{},
+			&ContentType{},
+		).
+		Model(&PermissionUser{}).AddForeignKey("user_id", "xadmin_user(id)", "cascade", "cascade").
+		Model(&PermissionUser{}).AddForeignKey("permission_id", "xadmin_permission(id)", "cascade", "cascade").
+		Model(&RolePermission{}).AddForeignKey("role_id", "xadmin_role(id)", "cascade", "cascade").
+		Model(&RolePermission{}).AddForeignKey("permission_id", "xadmin_permission(id)", "cascade", "cascade").
+		Model(&UserRole{}).AddForeignKey("role_id", "xadmin_role(id)", "cascade", "cascade").
+		Model(&UserRole{}).AddForeignKey("user_id", "xadmin_user(id)", "cascade", "cascade").
+		Model(&Permission{}).AddForeignKey("content_type_id", "xadmin_content_type(id)", "cascade", "cascade")
 }
 
 func (o *XadminConfig) initUser() {
