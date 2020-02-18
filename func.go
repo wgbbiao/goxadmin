@@ -155,13 +155,13 @@ func MapToWhere(params map[string]string, config Config) func(db *gorm.DB) *gorm
 			if config.Sort != "" {
 				order = config.Sort
 			} else {
-				order = "id"
+				order = "-id"
 			}
 		}
 		if strings.HasPrefix(order, "-") {
-			db = db.Order(gorm.Expr("? DESC", order[1:]))
+			db = db.Order(fmt.Sprintf("%s DESC", order[1:]))
 		} else {
-			db = db.Order(gorm.Expr("? ASC", order))
+			db = db.Order(fmt.Sprintf("%s ASC", order))
 		}
 		preloads, ok := params["preloads"]
 		if ok == false {
