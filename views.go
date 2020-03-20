@@ -67,6 +67,33 @@ func Login(c iris.Context) {
 	}
 }
 
+//ChangePassword 修改个人密码
+func ChangePassword(c iris.Context) {
+	u := c.Values().Get("u").(User)
+	if err := c.ReadJSON(&u); err == nil {
+		if err = Validate.Struct(u); err == nil {
+			u.SetPassword() //密码加密
+			Db.Model(&u).UpdateColumns(User{Password: u.Password, Salt: u.Salt})
+			c.JSON(iris.Map{
+				"status": HTTPSuccess,
+			})
+		} else {
+			c.StatusCode(iris.StatusBadRequest)
+			c.JSON(iris.Map{
+				"status":  HTTPFail,
+				"error":   ValidateError,
+				"errinfo": err,
+			})
+		}
+	} else {
+		c.StatusCode(iris.StatusBadRequest)
+		c.JSON(iris.Map{
+			"status": HTTPFail,
+			"error":  FormReadError,
+		})
+	}
+}
+
 //RefreshJwt 刷新jwt
 func RefreshJwt(c iris.Context) {
 	u := c.Values().Get("u").(User)

@@ -290,7 +290,14 @@ func (o *XadminConfig) initUser() {
 			Method: []string{iris.MethodGet},
 			Func:   GetInfo,
 			Jwt:    true,
-		})
+		},
+		Handle{
+			Path:   "/changepassword",
+			Method: []string{iris.MethodPost},
+			Func:   ChangePassword,
+			Jwt:    true,
+		},
+	)
 
 	o.Register(&User{}, Config{
 		BeforeSave: func(obj interface{}) {
