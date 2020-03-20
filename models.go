@@ -23,7 +23,7 @@ type User struct {
 	Username    string        `gorm:"type:varchar(50);UNIQUE" json:"username"`
 	Password    string        `gorm:"type:varchar(50)" json:"password,omitempty"`
 	Password2   string        `gorm:"-" json:"password2,omitempty"`
-	Salt        string        `gorm:"type:varchar(64)" json:"-,omitempty"`
+	Salt        string        `gorm:"type:varchar(64)" json:"-"`
 	IsSuper     bool          `gorm:"default:false" json:"is_super"`
 	LastLoginAt *time.Time    `gorm:"type:datetime;null" json:"last_login_at"`
 	Roles       []*Role       `gorm:"many2many:xadmin_user_role;association_autoupdate:false;association_autocreate:false" json:"roles"`
@@ -250,8 +250,10 @@ func (o *User) GetUserByID(id int) *gorm.DB {
 
 //SetPassword SetPassword
 func (o *User) SetPassword() {
-	o.Salt = fmt.Sprintf("%d", time.Now().Unix())
-	o.Password = Cmd5(o.Password, o.Salt)
+	if o.Password2 != "" {
+		o.Salt = fmt.Sprintf("%d", time.Now().Unix())
+		o.Password = Cmd5(o.Password, o.Salt)
+	}
 }
 
 //AutoMigrate AutoMigrate

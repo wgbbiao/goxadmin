@@ -278,7 +278,9 @@ func UpdateHandel(ctx iris.Context) {
 		}
 
 		if err := ctx.ReadJSON(&obj); err == nil {
-			// config.BeforeSave(obj)
+			if config.BeforeSave != nil {
+				config.BeforeSave(obj)
+			}
 			if Db.Save(obj).Error == nil {
 				sc := Db.NewScope(obj)
 				for _, f := range sc.Fields() {

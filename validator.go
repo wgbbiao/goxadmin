@@ -24,5 +24,4 @@ func CreateUserStructLevelValidation(sl validator.StructLevel) {
 		sl.ReportError(j.Password, "Password", "Password", UserPasswordError, "")
 		return
 	}
-	j.Password = "22222"
 }
