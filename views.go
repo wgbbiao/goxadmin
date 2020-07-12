@@ -186,9 +186,13 @@ func ListHandel(ctx iris.Context) {
 			page = 1
 		}
 		limit := config.PageSize
+
 		if all {
 			limit = 999999
 		} else {
+			if ctx.URLParamExists("page_size") {
+				limit, _ = ctx.URLParamInt("page_size")
+			}
 			if limit == 0 {
 				limit = 20
 			}
