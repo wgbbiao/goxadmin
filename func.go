@@ -9,8 +9,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/jinzhu/gorm"
 	"github.com/kataras/iris/v12"
+	"gorm.io/gorm"
 )
 
 //Cmd5 Cmd5
@@ -108,22 +108,13 @@ func ShowJSON(data interface{}) {
 //MapToWhere map转成gorm需要的搜索条件
 func MapToWhere(params map[string]string, config Config) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		scope := db.NewScope(config.Model)
 		for k, v := range params {
 			if strings.HasPrefix(k, "_p_") {
 				k = strings.Replace(k, "_p_", "", -1)
 				if strings.Contains(k, ".") {
 					tmp := strings.Split(k, ".")
 					tableName := tmp[0]
-					field, ok := scope.FieldByName(tableName)
-					if ok {
-						sqls := []string{}
-						sqls = append(sqls, "LEFT JOIN "+scope.Quote(field.DBName)+" ON ")
-						sqls = append(sqls, scope.QuotedTableName()+"."+scope.Quote(strings.Join(field.Relationship.ForeignDBNames, "")))
-						sqls = append(sqls, "="+scope.Quote(field.DBName)+".")
-						sqls = append(sqls, scope.Quote(strings.Join(field.Relationship.AssociationForeignFieldNames, "")))
-						db = db.Joins(strings.Join(sqls, ""))
-					}
+					db = db.Joins(Db.NamingStrategy.TableName(tableName))
 				}
 				fields := strings.Split(k, "__")
 				field := fields[0]

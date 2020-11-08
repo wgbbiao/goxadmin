@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jinzhu/gorm"
 	"github.com/kataras/iris/v12"
+	"gorm.io/gorm"
 )
 
 //DefaultModel 默认Model
@@ -267,14 +267,7 @@ func (o *XadminConfig) AutoMigrate() {
 			&RolePermission{},
 			&PermissionUser{},
 			&ContentType{},
-		).
-		Model(&PermissionUser{}).AddForeignKey("user_id", "xadmin_user(id)", "cascade", "cascade").
-		Model(&PermissionUser{}).AddForeignKey("permission_id", "xadmin_permission(id)", "cascade", "cascade").
-		Model(&RolePermission{}).AddForeignKey("role_id", "xadmin_role(id)", "cascade", "cascade").
-		Model(&RolePermission{}).AddForeignKey("permission_id", "xadmin_permission(id)", "cascade", "cascade").
-		Model(&UserRole{}).AddForeignKey("role_id", "xadmin_role(id)", "cascade", "cascade").
-		Model(&UserRole{}).AddForeignKey("user_id", "xadmin_user(id)", "cascade", "cascade").
-		Model(&Permission{}).AddForeignKey("content_type_id", "xadmin_content_type(id)", "cascade", "cascade")
+		)
 }
 
 func (o *XadminConfig) initUser() {
@@ -309,4 +302,5 @@ func (o *XadminConfig) initUser() {
 	})
 	o.Register(&Permission{}, Config{})
 	o.Register(&Role{}, Config{})
+	o.Register(&ContentType{}, Config{})
 }

@@ -5,27 +5,57 @@ import (
 	"time"
 
 	"github.com/iris-contrib/middleware/cors"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql" //mysql
 	"github.com/kataras/iris/v12"
 	"github.com/wgbbiao/goxadmin"
+	"gorm.io/driver/mysql" //mysql
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
+// DB db
+var DB *gorm.DB
+
+// User 有多张 CreditCard，UserID 是外键
+type User struct {
+	gorm.Model
+	Name        string
+	CreditCards []CreditCard
+}
+
+type CreditCard struct {
+	gorm.Model
+	Number string
+	UserID uint
+	User   User `gorm:"foreignKey:UserID"`
+}
+
+var xadmin *goxadmin.XadminConfig
+
+func init() {
+
+	dsn := "root:123456@tcp(192.168.3.193:3306)/app_rowclub?charset=utf8mb4&parseTime=True&loc=Local"
+	DB, _ = gorm.Open(mysql.Open(dsn), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true,
+		},
+	})
+
+	// DB.LogMode(true)
+
+	sqldb, _ := DB.DB()
+	sqldb.SetMaxIdleConns(50)
+	sqldb.SetMaxOpenConns(50)
+	sqldb.SetConnMaxLifetime(time.Duration(1000) * time.Second)
+
+	xadmin = goxadmin.NewXadmin(DB)
+	xadmin.Register(&User{}, goxadmin.Config{})
+	xadmin.Register(&CreditCard{}, goxadmin.Config{})
+
+	xadmin.AutoMigrate()
+	xadmin.SyncPermissions()
+}
 func main() {
-	DB, _ := gorm.Open("mysql", fmt.Sprintf("%s:%s@%s/%s?charset=utf8mb4&interpolateParams=true&parseTime=True&loc=Local",
-		"root",
-		"123456",
-		"tcp(192.168.3.158:3306)",
-		"app_rowclub"))
-
-	DB.LogMode(true)
-
-	DB.SingularTable(true)
-
-	DB.DB().Ping()
-	DB.DB().SetMaxIdleConns(50)
-	DB.DB().SetMaxOpenConns(50)
-	DB.DB().SetConnMaxLifetime(time.Duration(1000) * time.Second)
+	// fmt.Println("asdfasdf")
 	// time.LoadLocation(cfg.Section("system").Key("location").String())
 	crs := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
@@ -47,10 +77,7 @@ func main() {
 		context.Header("Access-Control-Allow-Origin", "*")
 		context.Header("Access-Control-Expose-Headers", "Content-Length,Content-Encoding,Content-Type")
 	})
-	xadmin := goxadmin.NewXadmin(DB)
 	xadmin.SetIris(r.Party("/admin"))
-	xadmin.AutoMigrate()
-	xadmin.SyncPermissions()
 	xadmin.Init()
 	for _, _r := range r.GetRoutes() {
 		fmt.Println(_r)
@@ -66,22 +93,4 @@ func main() {
 		TimeFormat:                        "Mon, 02 Jan 2006 15:04:05 GMT",
 		Charset:                           "UTF-8",
 	}))
-	// dd := DB.NewScope(goxadmin.User{})
-	// field, ok := dd.FieldByName("Permissions")
-	// fmt.Println(ok)
-	// b, _ := json.Marshal(field.Relationship)
-	// var str bytes.Buffer
-	// _ = json.Indent(&str, b, "", "    ")
-	// fmt.Println("formated: ", str.String())
-	// fmt.Println("data: ", string(b))
-
-	// kids := make([]goxadmin.User, 0)
-	// params := make(map[string]string)
-	// params["_p_permissions.name__like"] = "view"
-	// DB.Scopes(goxadmin.MapToWhere(params, goxadmin.Config{
-	// 	Model: &goxadmin.User{},
-	// })).Find(&kids)
-	// // models.DB.Joins("left join user on kid.user_id = user.id").
-	// // Where("user.mobile = ?", "13466625910").Find(&kids)
-	// fmt.Println(kids)
 }

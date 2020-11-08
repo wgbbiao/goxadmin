@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -11,6 +12,8 @@ import (
 	"github.com/kataras/iris/v12"
 	"github.com/unknwon/com"
 	"github.com/wxnacy/wgo/arrays"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 func getToken(c iris.Context, u User) (tokenString string) {
@@ -39,7 +42,7 @@ func Login(c iris.Context) {
 			"code":   FormReadError,
 		})
 	} else {
-		if db := u.GetByUsername(form.Username); db.RecordNotFound() {
+		if db := u.GetByUsername(form.Username); db.Error == gorm.ErrRecordNotFound {
 			c.StatusCode(iris.StatusBadRequest)
 			c.JSON(iris.Map{
 				"status": HTTPFail,
@@ -147,7 +150,7 @@ func CheckJWTAndSetUser(ctx iris.Context) {
 	if ctx.GetStatusCode() != iris.StatusUnauthorized {
 		var u User
 		x, _ := ctx.Values().Get("jwt").(*jwt.Token).Claims.(jwt.MapClaims)
-		if rt := u.GetUserByID(int(x["uid"].(float64))); !rt.RecordNotFound() && rt.Error == nil {
+		if rt := u.GetUserByID(int(x["uid"].(float64))); !(rt.Error == gorm.ErrRecordNotFound) && rt.Error == nil {
 			bl := true
 			if ctx.Params().Get("model") != "" {
 				config := GetConfig(ctx.Params().Get("model"), ctx.Params().GetString("table"))
@@ -199,7 +202,7 @@ func ListHandel(ctx iris.Context) {
 		}
 		offset := (page - 1) * limit
 		params := ctx.URLParams()
-		cnt := 0
+		cnt := int64(0)
 
 		err := Db.Set("gorm:auto_preload", false).Scopes(MapToWhere(params, config)).
 			Limit(limit).
@@ -313,24 +316,24 @@ func UpdateHandel(ctx iris.Context) {
 				config.BeforeSave(obj)
 			}
 			if Db.Save(obj).Error == nil {
-				sc := Db.NewScope(obj)
-				for _, f := range sc.Fields() {
-					if f.Relationship != nil {
-						if f.Relationship.Kind == "has_many" {
-							ff := f.Field
-							px := make([]int64, 0)
-							for index := 0; index < ff.Len(); index++ {
-								elm := ff.Index(index)
-								px = append(px, elm.FieldByName("ID").Int())
-							}
-							if ff.Len() > 0 {
-								tableName := Db.NewScope(ff.Index(0).Interface()).TableName()
-								sql := fmt.Sprintf("DELETE from %s Where id NOT IN (?) and %s = ?", tableName, f.Relationship.ForeignDBNames[0])
-								Db.Exec(sql, px, id)
-							}
-						}
-					}
+				sc, _ := schema.Parse(obj, &sync.Map{}, Db.NamingStrategy)
+				for _, f := range sc.Relationships.HasMany {
+					d := reflect.Indirect(reflect.ValueOf(obj))
+					ff := d.FieldByName(f.Name)
+					Db.Model(&obj).Association(f.Name).Replace(&ff)
 				}
+				for _, f := range sc.Relationships.Many2Many {
+					d := reflect.Indirect(reflect.ValueOf(obj))
+					ff := d.FieldByName(f.Name)
+					fmt.Println(f.Name)
+					fmt.Println(ff)
+					Db.Model(&obj).Association(f.Name).Replace(&ff)
+				}
+				// for _, f := range sc.Relationships.BelongsTo {
+				// 	d := reflect.Indirect(reflect.ValueOf(obj))
+				// 	ff := d.FieldByName(f.Name)
+				// 	Db.Model(obj).Association(f.Name).Replace(ff)
+				// }
 				ctx.JSON(iris.Map{
 					"status": HTTPSuccess,
 				})
