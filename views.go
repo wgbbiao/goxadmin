@@ -204,12 +204,11 @@ func ListHandel(ctx iris.Context) {
 		params := ctx.URLParams()
 		cnt := int64(0)
 
-		err := Db.Set("gorm:auto_preload", false).Scopes(MapToWhere(params, config)).
+		err := Db.Model(config.Model).Set("gorm:auto_preload", false).Scopes(MapToWhere(params, config)).
+			Count(&cnt).
 			Limit(limit).
 			Offset(offset).
-			Find(rs).
-			Offset(0).
-			Count(&cnt).Error
+			Find(rs).Error
 		if err == nil {
 			ctx.JSON(iris.Map{
 				"list":  rs,
