@@ -1,7 +1,6 @@
 package goxadmin
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"sync"
@@ -211,8 +210,9 @@ func ListHandel(ctx iris.Context) {
 			Find(rs).Error
 		if err == nil {
 			ctx.JSON(iris.Map{
-				"list":  rs,
-				"total": cnt,
+				"status": HTTPSuccess,
+				"list":   rs,
+				"total":  cnt,
 			})
 		} else {
 			ctx.StatusCode(iris.StatusBadRequest)
@@ -236,7 +236,8 @@ func DetailHandel(ctx iris.Context) {
 		params := ctx.URLParams()
 		if err := Db.Scopes(MapToWhere(params, config)).First(obj, id).Error; err == nil {
 			ctx.JSON(iris.Map{
-				"data": obj,
+				"status": HTTPSuccess,
+				"data":   obj,
 			})
 		} else {
 			ctx.StatusCode(iris.StatusBadRequest)
@@ -285,8 +286,9 @@ func PostHandel(ctx iris.Context) {
 		} else {
 			ctx.StatusCode(iris.StatusBadRequest)
 			ctx.JSON(iris.Map{
-				"status": HTTPFail,
-				"error":  FormReadError,
+				"status":  HTTPFail,
+				"error":   FormReadError,
+				"errinfo": err,
 			})
 		}
 	}
@@ -324,15 +326,8 @@ func UpdateHandel(ctx iris.Context) {
 				for _, f := range sc.Relationships.Many2Many {
 					d := reflect.Indirect(reflect.ValueOf(obj))
 					ff := d.FieldByName(f.Name)
-					fmt.Println(f.Name)
-					fmt.Println(ff)
 					Db.Model(&obj).Association(f.Name).Replace(&ff)
 				}
-				// for _, f := range sc.Relationships.BelongsTo {
-				// 	d := reflect.Indirect(reflect.ValueOf(obj))
-				// 	ff := d.FieldByName(f.Name)
-				// 	Db.Model(obj).Association(f.Name).Replace(ff)
-				// }
 				ctx.JSON(iris.Map{
 					"status": HTTPSuccess,
 				})
@@ -365,7 +360,8 @@ func DeleteHandel(ctx iris.Context) {
 		if err := Db.First(obj, id).Error; err == nil {
 			if Db.Delete(obj).Error == nil {
 				ctx.JSON(iris.Map{
-					"data": obj,
+					"status": HTTPSuccess,
+					"data":   obj,
 				})
 			} else {
 				ctx.StatusCode(iris.StatusBadRequest)
@@ -380,5 +376,35 @@ func DeleteHandel(ctx iris.Context) {
 				"errinfo": err,
 			})
 		}
+	}
+}
+
+//BatchDeleteHandel 批量删除记录
+func BatchDeleteHandel(ctx iris.Context) {
+	ids := ctx.URLParam("ids")
+	config := GetConfig(ctx.Params().Get("model"), ctx.Params().Get("table"))
+	if arrays.ContainsString(config.DisableAction, "delete") > -1 {
+		ctx.StatusCode(iris.StatusForbidden)
+	} else {
+		succ := 0
+		fail := 0
+		for _, id := range strings.Split(ids, ",") {
+			obj := GetVal(config.Model)
+
+			if err := Db.First(obj, id).Error; err == nil {
+				if Db.Delete(obj).Error == nil {
+					succ++
+				} else {
+					fail++
+				}
+			} else {
+				fail++
+			}
+		}
+		ctx.JSON(iris.Map{
+			"status": HTTPSuccess,
+			"fail":   fail,
+			"succ":   succ,
+		})
 	}
 }

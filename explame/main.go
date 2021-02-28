@@ -33,7 +33,7 @@ var xadmin *goxadmin.XadminConfig
 
 func init() {
 
-	dsn := "root:123456@tcp(192.168.3.193:3306)/app_rowclub?charset=utf8mb4&parseTime=True&loc=Local"
+	dsn := "root:123456@tcp(192.168.1.7:3306)/app_rowclub?charset=utf8mb4&parseTime=True&loc=Local"
 	DB, _ = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
@@ -67,7 +67,7 @@ func main() {
 	r := iris.New()
 	r.Use(crs)
 	r.Use(func(ctx iris.Context) {
-		ctx.Gzip(true)
+		// ctx.Gzip(true)
 		ctx.Next()
 	})
 	r.Options("{root:path}", func(context iris.Context) {
