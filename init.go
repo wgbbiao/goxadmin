@@ -146,6 +146,7 @@ func (o *XadminConfig) Init() {
 	o.IrisParty.Get("/{model:string  min(3)}/{table:string  min(3)}", o.JwtCheckFunc, ListHandel)
 	o.IrisParty.Get("/{model:string  min(3)}/{table:string  min(3)}/{id:int}", o.JwtCheckFunc, DetailHandel)
 	o.IrisParty.Put("/{model:string  min(3)}/{table:string  min(3)}/{id:int}", o.JwtCheckFunc, UpdateHandel)
+	o.IrisParty.Put("/{model:string  min(3)}/{table:string  min(3)}", o.JwtCheckFunc, BatchUpdateHandel)
 	o.IrisParty.Post("/{model:string  min(3)}/{table:string  min(3)}", o.JwtCheckFunc, PostHandel)
 	o.IrisParty.Delete("/{model:string  min(3)}/{table:string  min(3)}/{id:int}", o.JwtCheckFunc, DeleteHandel)
 	o.IrisParty.Delete("/{model:string  min(3)}/{table:string  min(3)}", o.JwtCheckFunc, BatchDeleteHandel)

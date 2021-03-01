@@ -357,22 +357,47 @@ func DeleteHandel(ctx iris.Context) {
 		ctx.StatusCode(iris.StatusForbidden)
 	} else {
 		obj := GetVal(config.Model)
-		if err := Db.First(obj, id).Error; err == nil {
-			if Db.Delete(obj).Error == nil {
-				ctx.JSON(iris.Map{
-					"status": HTTPSuccess,
-					"data":   obj,
-				})
-			} else {
-				ctx.StatusCode(iris.StatusBadRequest)
-				ctx.JSON(iris.Map{
-					"status": HTTPFail,
-					"error":  DBError,
-				})
-			}
+		if Db.Delete(obj, id).Error == nil {
+			ctx.JSON(iris.Map{
+				"status": HTTPSuccess,
+			})
 		} else {
 			ctx.StatusCode(iris.StatusBadRequest)
 			ctx.JSON(iris.Map{
+				"status": HTTPFail,
+				"error":  DBError,
+			})
+		}
+	}
+}
+
+// BatchUpdateHandel 批量更新记录
+func BatchUpdateHandel(ctx iris.Context) {
+	ids := ctx.URLParam("ids")
+	config := GetConfig(ctx.Params().Get("model"), ctx.Params().Get("table"))
+	if arrays.ContainsString(config.DisableAction, "delete") > -1 {
+		ctx.StatusCode(iris.StatusForbidden)
+	} else {
+		succ := 0
+		fail := 0
+		var updateJSON map[string]interface{}
+		if err := ctx.ReadJSON(&updateJSON); err == nil {
+			for _, id := range strings.Split(ids, ",") {
+				obj := GetVal(config.Model)
+				if db := Db.Model(obj).Where("id = ?", com.StrTo(id).MustInt()).Updates(updateJSON); db.Error == nil && db.RowsAffected > 0 {
+					succ++
+				} else {
+					fail++
+				}
+			}
+			ctx.JSON(iris.Map{
+				"status": HTTPSuccess,
+				"fail":   fail,
+				"succ":   succ,
+			})
+		} else {
+			ctx.JSON(iris.Map{
+				"status":  HTTPFail,
 				"errinfo": err,
 			})
 		}
@@ -390,8 +415,7 @@ func BatchDeleteHandel(ctx iris.Context) {
 		fail := 0
 		for _, id := range strings.Split(ids, ",") {
 			obj := GetVal(config.Model)
-
-			if err := Db.First(obj, id).Error; err == nil {
+			if err := Db.First(obj, com.StrTo(id).MustInt()).Error; err == nil {
 				if Db.Delete(obj).Error == nil {
 					succ++
 				} else {
