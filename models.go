@@ -114,7 +114,7 @@ func (o *User) HasPermission(perm string) bool {
 //HasPermissionForModel 是否对那个model有权限
 func HasPermissionForModel(u *User, model interface{}, perm string) (bl bool) {
 	bl = false
-	if u.IsSuper == true {
+	if u.IsSuper {
 		bl = true
 		return
 	}
@@ -228,7 +228,7 @@ func (o *User) GetPermission() (perms []Permission) {
 // GetPermissionInfo 取得权限信息
 func (o *User) GetPermissionInfo() (perms map[string][]string) {
 	ps := o.GetPermission()
-	perms = make(map[string][]string, 0)
+	perms = make(map[string][]string)
 	for _, p := range ps {
 		modelPath := fmt.Sprintf("%s.%s", p.ContentType.AppLabel, p.ContentType.Model)
 		if _, ok := perms[modelPath]; !ok {

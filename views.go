@@ -382,14 +382,17 @@ func BatchUpdateHandel(ctx iris.Context) {
 		fail := 0
 		var updateJSON map[string]interface{}
 		if err := ctx.ReadJSON(&updateJSON); err == nil {
-			for _, id := range strings.Split(ids, ",") {
-				obj := GetVal(config.Model)
-				if db := Db.Model(obj).Where("id = ?", com.StrTo(id).MustInt()).Updates(updateJSON); db.Error == nil && db.RowsAffected > 0 {
-					succ++
-				} else {
-					fail++
+			Db.Transaction(func(tx *gorm.DB) error {
+				for _, id := range strings.Split(ids, ",") {
+					obj := GetVal(config.Model)
+					if db := tx.Model(obj).Where("id = ?", com.StrTo(id).MustInt()).Not(updateJSON).Updates(updateJSON); db.Error == nil && db.RowsAffected > 0 {
+						succ++
+					} else {
+						fail++
+					}
 				}
-			}
+				return nil
+			})
 			ctx.JSON(iris.Map{
 				"status": HTTPSuccess,
 				"fail":   fail,

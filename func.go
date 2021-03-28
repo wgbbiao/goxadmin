@@ -142,7 +142,7 @@ func MapToWhere(params map[string]string, config Config) func(db *gorm.DB) *gorm
 			}
 		}
 		order, ok := params["o"]
-		if ok == false {
+		if !ok {
 			if config.Sort != "" {
 				order = config.Sort
 			} else {
@@ -155,7 +155,7 @@ func MapToWhere(params map[string]string, config Config) func(db *gorm.DB) *gorm
 			db = db.Order(fmt.Sprintf("%s ASC", order))
 		}
 		preloads, ok := params["preloads"]
-		if ok == false {
+		if !ok {
 			db = db.Set("gorm:auto_preload", false)
 		} else {
 			for _, p := range strings.Split(preloads, ",") {
