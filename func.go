@@ -124,6 +124,8 @@ func MapToWhere(params map[string]string, config Config) func(db *gorm.DB) *gorm
 					db = db.Where(fmt.Sprintf("%s = ?", field), v)
 				case "in":
 					db = db.Where(fmt.Sprintf("%s in (?)", field), strings.Split(v, ","))
+				case "notin":
+					db = db.Where(fmt.Sprintf("%s not in (?)", field), strings.Split(v, ","))
 				case "to":
 					db = db.Where(fmt.Sprintf("%s <= ?", field), v)
 				case "from":

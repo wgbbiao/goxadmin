@@ -201,6 +201,10 @@ func ListHandel(ctx iris.Context) {
 		}
 		offset := (page - 1) * limit
 		params := ctx.URLParams()
+		// 查询前的处理查询条件
+		if config.BeforeListQuery != nil {
+			config.BeforeListQuery(&params)
+		}
 		cnt := int64(0)
 
 		err := Db.Model(config.Model).Set("gorm:auto_preload", false).Scopes(MapToWhere(params, config)).

@@ -32,8 +32,9 @@ type Config struct {
 	ListField []string //列表页字段
 	Model     interface{}
 	// Layout     interface{} //表单排列
-	PageSize   int //每页大小
-	BeforeSave func(obj interface{})
+	PageSize        int //每页大小
+	BeforeSave      func(obj interface{})
+	BeforeListQuery func(query *map[string]string)
 	//todo
 	// Form interface{} //自定表单
 	Sort          string
