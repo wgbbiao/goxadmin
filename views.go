@@ -361,10 +361,19 @@ func DeleteHandel(ctx iris.Context) {
 		ctx.StatusCode(iris.StatusForbidden)
 	} else {
 		obj := GetVal(config.Model)
-		if Db.Delete(obj, id).Error == nil {
-			ctx.JSON(iris.Map{
-				"status": HTTPSuccess,
-			})
+		// 查询记录
+		if err := Db.First(obj, id).Error; err == nil {
+			if Db.Delete(obj).Error == nil {
+				ctx.JSON(iris.Map{
+					"status": HTTPSuccess,
+				})
+			} else {
+				ctx.StatusCode(iris.StatusBadRequest)
+				ctx.JSON(iris.Map{
+					"status": HTTPFail,
+					"error":  DBError,
+				})
+			}
 		} else {
 			ctx.StatusCode(iris.StatusBadRequest)
 			ctx.JSON(iris.Map{
