@@ -6,8 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
-	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
+	"github.com/iris-contrib/middleware/jwt"
 	"github.com/kataras/iris/v12"
 	"github.com/unknwon/com"
 	"github.com/wxnacy/wgo/arrays"
@@ -21,7 +20,7 @@ func getToken(c iris.Context, u User) (tokenString string) {
 		"uid": u.ID,
 	}
 
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claim)
+	accessToken := jwt.NewTokenWithClaims(jwt.SigningMethodHS256, claim)
 	tokenString, _ = accessToken.SignedString([]byte(JwtKey))
 	return
 }
@@ -119,7 +118,7 @@ func GetInfo(c iris.Context) {
 	})
 }
 
-var jwtc = jwtmiddleware.Config{
+var jwtCfg = jwt.Config{
 	ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
 		return []byte(JwtKey), nil
 	},
@@ -127,7 +126,7 @@ var jwtc = jwtmiddleware.Config{
 	ErrorHandler:  OnJwtError,
 }
 
-var myJwtMiddleware = jwtmiddleware.New(jwtc)
+var myJwtMiddleware = jwt.New(jwtCfg)
 
 //OnJwtError jwt error
 func OnJwtError(ctx iris.Context, err error) {

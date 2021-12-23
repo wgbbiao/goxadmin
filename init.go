@@ -41,8 +41,8 @@ type Config struct {
 	DisableAction []string //禁止的操作 [create,update,detail,delete,list]
 }
 
-//HasPremisson 检查是否有权限
-func (c *Config) HasPremisson(action string) bool {
+//HasPermission 检查是否有权限
+func (c *Config) HasPermission(action string) bool {
 	return true
 }
 
