@@ -114,7 +114,7 @@ func MapToWhere(params map[string]string, config Config) func(db *gorm.DB) *gorm
 				if strings.Contains(k, ".") {
 					tmp := strings.Split(k, ".")
 					tableName := tmp[0]
-					db = db.Joins(Db.NamingStrategy.TableName(tableName))
+					db = db.Joins(tableName)
 				}
 				fields := strings.Split(k, "__")
 				field := fields[0]

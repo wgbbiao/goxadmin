@@ -1,6 +1,7 @@
 package goxadmin
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -87,7 +88,11 @@ func (o *XadminConfig) Register(model interface{}, config Config) {
 
 	modelname := strings.Replace(resType.String(), "*", "", 1)
 	modelname = strings.Replace(modelname, ".", "/", 1)
-	// models[modelname] = config
+	if config.Sort == "" {
+		stmt := &gorm.Statement{DB: Db}
+		stmt.Parse(model)
+		config.Sort = fmt.Sprintf("%s.id", stmt.Schema.Table)
+	}
 	o.Models[modelname] = config
 }
 
