@@ -91,7 +91,7 @@ func (o *XadminConfig) Register(model interface{}, config Config) {
 	if config.Sort == "" {
 		stmt := &gorm.Statement{DB: Db}
 		stmt.Parse(model)
-		config.Sort = fmt.Sprintf("%s.id", stmt.Schema.Table)
+		config.Sort = fmt.Sprintf("-%s.id", stmt.Schema.Table)
 	}
 	o.Models[modelname] = config
 }
