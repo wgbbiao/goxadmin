@@ -164,7 +164,7 @@ func (o User) Title() string {
 }
 
 //AddRole 添加角色
-func AddRole(code, name string) error {
+func AddRole(_, name string) error {
 	db := Db.Create(&Role{Name: name})
 	return db.Error
 }

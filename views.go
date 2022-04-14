@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-func getToken(c iris.Context, u User) (tokenString string) {
+func getToken(_ iris.Context, u User) (tokenString string) {
 	claim := jwt.MapClaims{
 		"exp": time.Now().Unix() + JwtTimeOut,
 		"uid": u.ID,
